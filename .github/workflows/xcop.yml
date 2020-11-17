@@ -5,7 +5,8 @@ name: XCOP linter
     branches:
       - master
   pull_request:
-
+    brranches:
+      - master
 jobs:
   xcop-lint:
     runs-on: ubuntu-latest
