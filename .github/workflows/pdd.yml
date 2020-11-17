@@ -5,7 +5,7 @@ name: PDD linter
     branches:
       - master
   pull_request:
-    brranches:
+    branches:
       - master
 jobs:
   pdd-lint:
