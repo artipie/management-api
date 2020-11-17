@@ -4,8 +4,7 @@ name: Git linter
     branches:
       - master
   pull_request:
-    branches:
-      - master
+
 jobs:
   gitlint:
     runs-on: ubuntu-latest

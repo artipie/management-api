@@ -5,8 +5,7 @@ name: PDD linter
     branches:
       - master
   pull_request:
-    brranches:
-      - master
+
 jobs:
   pdd-lint:
     runs-on: ubuntu-latest
