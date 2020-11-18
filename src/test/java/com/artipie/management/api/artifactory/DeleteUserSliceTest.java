@@ -23,26 +23,18 @@
  */
 package com.artipie.management.api.artifactory;
 
-import com.amihaiemil.eoyaml.Yaml;
-import com.artipie.asto.Key;
-import com.artipie.asto.Storage;
-import com.artipie.asto.ext.PublisherAs;
-import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.http.hm.RsHasBody;
 import com.artipie.http.hm.RsHasStatus;
 import com.artipie.http.hm.SliceHasResponse;
 import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
-import com.artipie.management.CredsConfigYaml;
 import com.artipie.management.FakeUsers;
 import com.artipie.management.Users;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
-import org.hamcrest.core.IsNull;
-import org.junit.jupiter.api.Disabled;
+import org.hamcrest.collection.IsEmptyIterable;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -53,6 +45,7 @@ import org.junit.jupiter.api.Test;
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 final class DeleteUserSliceTest {
+
     @Test
     void returnsBadRequestOnInvalidRequest() {
         MatcherAssert.assertThat(
@@ -65,7 +58,6 @@ final class DeleteUserSliceTest {
     }
 
     @Test
-    @Disabled
     void returnsNotFoundIfCredentialsAreEmpty() {
         MatcherAssert.assertThat(
             new DeleteUserSlice(new FakeUsers()),
@@ -78,11 +70,8 @@ final class DeleteUserSliceTest {
 
     @Test
     void returnsNotFoundIfUserIsNotFoundInCredentials() {
-        final Storage storage = new InMemoryStorage();
-        final Key key = new Key.From("_credentials.yaml");
-        new CredsConfigYaml().withUsers("john").saveTo(storage, key);
         MatcherAssert.assertThat(
-            new DeleteUserSlice(new Users.FromStorageYaml(storage, key)),
+            new DeleteUserSlice(new FakeUsers("john")),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.NOT_FOUND),
                 new RequestLine(RqMethod.DELETE, "/api/security/users/notfound")
@@ -91,13 +80,11 @@ final class DeleteUserSliceTest {
     }
 
     @Test
-    void returnsOkAndDeleteIfUserIsFoundInCredentials() throws IOException {
-        final Storage storage = new InMemoryStorage();
-        final Key key = new Key.From("_credentials.yaml");
-        new CredsConfigYaml().withUsers("jane").saveTo(storage, key);
+    void returnsOkAndDeleteIfUserIsFoundInCredentials() {
+        final Users users = new FakeUsers("jane");
         MatcherAssert.assertThat(
             "DeleteUserSlice response",
-            new DeleteUserSlice(new Users.FromStorageYaml(storage, key)),
+            new DeleteUserSlice(users),
             new SliceHasResponse(
                 Matchers.allOf(
                     new RsHasStatus(RsStatus.OK),
@@ -109,12 +96,9 @@ final class DeleteUserSliceTest {
             )
         );
         MatcherAssert.assertThat(
-            "User should be deleted from storage",
-            Yaml.createYamlInput(
-                new PublisherAs(storage.value(key).join())
-                    .asciiString().toCompletableFuture().join()
-            ).readYamlMapping().string("credentials"),
-            new IsNull<>()
+            "User should be deleted",
+            users.list().toCompletableFuture().join(),
+            new IsEmptyIterable<>()
         );
     }
 
