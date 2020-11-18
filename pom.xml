@@ -39,7 +39,7 @@ SOFTWARE.
   <licenses>
     <license>
       <name>MIT</name>
-      <url>https://github.com/artipie/management-api/blob/main/LICENSE</url>
+      <url>https://github.com/artipie/management-api/blob/main/LICENSE.txt</url>
     </license>
   </licenses>
   <developers>
@@ -177,7 +177,7 @@ SOFTWARE.
             <exclude>checkstyle:.*/src/test/resources/.*</exclude>
             <exclude>pmd:.*/src/test/resources/.*</exclude>
           </excludes>
-          <license>file:${basedir}/LICENSE</license>
+          <license>file:${basedir}/LICENSE.txt</license>
         </configuration>
       </plugin>
     </plugins>
