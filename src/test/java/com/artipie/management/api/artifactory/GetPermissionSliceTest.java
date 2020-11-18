@@ -31,6 +31,7 @@ import com.artipie.http.hm.SliceHasResponse;
 import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
+import com.artipie.management.FakeRepoPerms;
 import com.artipie.management.RepoConfigYaml;
 import com.artipie.management.RepoPermissions;
 import com.artipie.management.RepoPerms;
@@ -66,7 +67,7 @@ class GetPermissionSliceTest {
     @Test
     void returnsBadRequestOnInvalidRequest() {
         MatcherAssert.assertThat(
-            new GetPermissionSlice(this.storage),
+            new GetPermissionSlice(this.storage, new FakeRepoPerms()),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.BAD_REQUEST),
                 new RequestLine(RqMethod.GET, "/some/api/permissions/maven")
@@ -77,7 +78,7 @@ class GetPermissionSliceTest {
     @Test
     void returnsNotFoundIfRepoDoesNotExists() {
         MatcherAssert.assertThat(
-            new GetPermissionSlice(this.storage),
+            new GetPermissionSlice(this.storage, new FakeRepoPerms()),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.NOT_FOUND),
                 new RequestLine(RqMethod.GET, "/api/security/permissions/pypi")
@@ -90,7 +91,7 @@ class GetPermissionSliceTest {
         final String repo = "docker";
         new RepoConfigYaml(repo).saveTo(this.storage, repo);
         MatcherAssert.assertThat(
-            new GetPermissionSlice(this.storage),
+            new GetPermissionSlice(this.storage, new RepoPermissions.FromSettings(this.storage)),
             new SliceHasResponse(
                 new RsHasBody(
                     this.response(
@@ -126,7 +127,7 @@ class GetPermissionSliceTest {
             )
         ).saveTo(this.storage, repo);
         MatcherAssert.assertThat(
-            new GetPermissionSlice(this.storage),
+            new GetPermissionSlice(this.storage, new RepoPermissions.FromSettings(this.storage)),
             new SliceHasResponse(
                 new RsHasBody(
                     this.response(
