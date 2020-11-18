@@ -20,7 +20,7 @@ This library contains management API and dashboard for Artipie. REST API allows 
 - manage repository permission
 - list repository items
 
-For more details check [this](https://github.com/artipie/artipie/blob/master/REST_API.md) page.
+For more details check [this](./REST_API.md) page.
 
 Dashboard provides opportunity to manage users and user's repositories over browser and is used in 
 [Artipie central](https://central.artipie.com/).
