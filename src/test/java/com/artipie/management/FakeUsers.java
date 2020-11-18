@@ -74,9 +74,7 @@ public final class FakeUsers implements Users {
 
     @Override
     public CompletionStage<List<User>> list() {
-        final CompletableFuture<List<User>> res = new CompletableFuture<>();
-        res.complete(new ArrayList<>(this.users.keySet()));
-        return res;
+        return CompletableFuture.completedFuture(new ArrayList<>(this.users.keySet()));
     }
 
     @Override
