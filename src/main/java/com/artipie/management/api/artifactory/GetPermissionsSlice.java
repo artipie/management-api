@@ -24,7 +24,6 @@
 package com.artipie.management.api.artifactory;
 
 import com.amihaiemil.eoyaml.YamlMapping;
-import com.artipie.asto.Storage;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import com.artipie.http.async.AsyncResponse;
@@ -45,14 +44,9 @@ import org.reactivestreams.Publisher;
 public final class GetPermissionsSlice implements Slice {
 
     /**
-     * This endpoint path.
+     * Repository permissions.
      */
-    public static final String PATH = "/api/security/permissions";
-
-    /**
-     * Artipie settings storage.
-     */
-    private final Storage storage;
+    private final RepoPermissions permissions;
 
     /**
      * Artipie meta config.
@@ -61,11 +55,11 @@ public final class GetPermissionsSlice implements Slice {
 
     /**
      * Ctor.
-     * @param storage Setting
+     * @param permissions Repository permissions
      * @param meta Artipie meta config
      */
-    public GetPermissionsSlice(final Storage storage, final YamlMapping meta) {
-        this.storage = storage;
+    public GetPermissionsSlice(final RepoPermissions permissions, final YamlMapping meta) {
+        this.permissions = permissions;
         this.meta = meta;
     }
 
@@ -74,7 +68,7 @@ public final class GetPermissionsSlice implements Slice {
         final Publisher<ByteBuffer> body) {
         final String base = this.meta.string("base_url").replaceAll("/$", "");
         return new AsyncResponse(
-            new RepoPermissions.FromSettings(this.storage).repositories().<Response>thenApply(
+            this.permissions.repositories().<Response>thenApply(
                 list -> {
                     final JsonArrayBuilder json = Json.createArrayBuilder();
                     list.forEach(

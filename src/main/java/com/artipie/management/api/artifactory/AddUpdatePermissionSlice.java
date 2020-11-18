@@ -23,7 +23,6 @@
  */
 package com.artipie.management.api.artifactory;
 
-import com.artipie.asto.Storage;
 import com.artipie.asto.ext.PublisherAs;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
@@ -79,14 +78,14 @@ public final class AddUpdatePermissionSlice implements Slice {
     /**
      * Artipie settings storage.
      */
-    private final Storage storage;
+    private final RepoPermissions permissions;
 
     /**
      * Ctor.
-     * @param storage Artipie settings storage
+     * @param permissions Artipie settings storage
      */
-    public AddUpdatePermissionSlice(final Storage storage) {
-        this.storage = storage;
+    public AddUpdatePermissionSlice(final RepoPermissions permissions) {
+        this.permissions = permissions;
     }
 
     @Override
@@ -149,7 +148,7 @@ public final class AddUpdatePermissionSlice implements Slice {
             .collect(Collectors.toList());
         final CompletionStage<Boolean> result;
         if (patterns.stream().allMatch(ptrn -> ptrn.valid(name))) {
-            result = new RepoPermissions.FromSettings(this.storage)
+            result = this.permissions
                 .update(name, res, patterns)
                 .thenApply(nothing -> true);
         } else {

@@ -54,11 +54,18 @@ public final class DeletePermissionSlice implements Slice {
     private final Storage storage;
 
     /**
+     * Repository permissions.
+     */
+    private final RepoPermissions permissions;
+
+    /**
      * Ctor.
      * @param storage Artipie settings storage
+     * @param permissions Artipie repository permissions
      */
-    public DeletePermissionSlice(final Storage storage) {
+    public DeletePermissionSlice(final Storage storage, final RepoPermissions permissions) {
         this.storage = storage;
+        this.permissions = permissions;
     }
 
     @Override
@@ -73,14 +80,13 @@ public final class DeletePermissionSlice implements Slice {
                         exists -> {
                             final CompletionStage<Response> res;
                             if (exists) {
-                                res = new RepoPermissions.FromSettings(this.storage).remove(repo)
-                                    .thenApply(
-                                        ignored -> new RsWithBody(
-                                            // @checkstyle LineLengthCheck (2 lines)
-                                            String.format("Permission Target '%s' has been removed successfully.", repo),
-                                            StandardCharsets.UTF_8
-                                        )
-                                    );
+                                res = this.permissions.remove(repo).thenApply(
+                                    ignored -> new RsWithBody(
+                                        // @checkstyle LineLengthCheck (2 lines)
+                                        String.format("Permission Target '%s' has been removed successfully.", repo),
+                                        StandardCharsets.UTF_8
+                                    )
+                                );
                             } else {
                                 res = CompletableFuture.completedStage(StandardRs.NOT_FOUND);
                             }
