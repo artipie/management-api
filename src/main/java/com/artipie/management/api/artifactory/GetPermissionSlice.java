@@ -61,11 +61,18 @@ public final class GetPermissionSlice implements Slice {
     private final Storage storage;
 
     /**
+     * Repository permissions.
+     */
+    private final RepoPermissions permissions;
+
+    /**
      * Ctor.
      * @param storage Artipie settings
+     * @param permissions Repository permissions
      */
-    public GetPermissionSlice(final Storage storage) {
+    public GetPermissionSlice(final Storage storage, final RepoPermissions permissions) {
         this.storage = storage;
+        this.permissions = permissions;
     }
 
     @Override
@@ -79,11 +86,8 @@ public final class GetPermissionSlice implements Slice {
                         exists -> {
                             final CompletionStage<Response> res;
                             if (exists) {
-                                final RepoPermissions source = new RepoPermissions.FromSettings(
-                                    this.storage
-                                );
-                                res = source.permissions(repo).thenCombine(
-                                    source.patterns(repo),
+                                res = this.permissions.permissions(repo).thenCombine(
+                                    this.permissions.patterns(repo),
                                     (perms, patterns) -> new RsJson(
                                         GetPermissionSlice.response(patterns, perms, repo)
                                     )

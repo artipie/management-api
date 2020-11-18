@@ -23,10 +23,9 @@
  */
 package com.artipie.management.api.artifactory;
 
-import com.amihaiemil.eoyaml.Yaml;
+import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
-import com.artipie.asto.ext.PublisherAs;
 import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.http.hm.RsHasBody;
 import com.artipie.http.hm.RsHasStatus;
@@ -34,15 +33,11 @@ import com.artipie.http.hm.SliceHasResponse;
 import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
-import com.artipie.management.RepoConfigYaml;
-import com.artipie.management.RepoPermissions;
-import com.artipie.management.RepoPerms;
-import java.io.IOException;
+import com.artipie.management.FakeRepoPerms;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
-import org.hamcrest.core.IsNull;
+import org.hamcrest.collection.IsEmptyCollection;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -55,7 +50,7 @@ class DeletePermissionSliceTest {
     @Test
     void returnsBadRequestOnInvalidRequest() {
         MatcherAssert.assertThat(
-            new DeletePermissionSlice(new InMemoryStorage()),
+            new DeletePermissionSlice(new InMemoryStorage(), new FakeRepoPerms()),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.BAD_REQUEST),
                 new RequestLine(RqMethod.DELETE, "/some/api/permissions/pypi")
@@ -66,7 +61,7 @@ class DeletePermissionSliceTest {
     @Test
     void returnsNotFoundIfRepositoryDoesNotExists() {
         MatcherAssert.assertThat(
-            new DeletePermissionSlice(new InMemoryStorage()),
+            new DeletePermissionSlice(new InMemoryStorage(), new FakeRepoPerms()),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.NOT_FOUND),
                 new RequestLine(RqMethod.DELETE, "/api/security/permissions/pypi")
@@ -75,22 +70,15 @@ class DeletePermissionSliceTest {
     }
 
     @Test
-    void deletesRepoPermissions() throws IOException {
+    void deletesRepoPermissions() {
         final Storage storage = new InMemoryStorage();
         final String repo = "docker";
         final Key.From key = new Key.From(String.format("%s.yaml", repo));
-        new RepoConfigYaml(repo).withPermissions(
-            new RepoPerms(
-                List.of(
-                    new RepoPermissions.PermissionItem("admin", "*"),
-                    new RepoPermissions.PermissionItem("john", "delete"),
-                    new RepoPermissions.PermissionItem("*", "download")
-                )
-            )
-        ).saveTo(storage, repo);
+        storage.save(key, Content.EMPTY).join();
+        final FakeRepoPerms permissions = new FakeRepoPerms(repo);
         MatcherAssert.assertThat(
             "Returns 200 OK",
-            new DeletePermissionSlice(storage),
+            new DeletePermissionSlice(storage, permissions),
             new SliceHasResponse(
                 Matchers.allOf(
                     new RsHasStatus(RsStatus.OK),
@@ -107,11 +95,8 @@ class DeletePermissionSliceTest {
         );
         MatcherAssert.assertThat(
             "Removes permissions",
-            Yaml.createYamlInput(
-                new PublisherAs(storage.value(key).join())
-                    .asciiString().toCompletableFuture().join()
-            ).readYamlMapping().yamlMapping("repo").yamlMapping("permissions"),
-            new IsNull<>()
+            permissions.repositories().toCompletableFuture().join(),
+            new IsEmptyCollection<>()
         );
     }
 

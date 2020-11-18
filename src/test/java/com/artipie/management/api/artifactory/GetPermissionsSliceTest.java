@@ -25,17 +25,15 @@ package com.artipie.management.api.artifactory;
 
 import com.amihaiemil.eoyaml.Yaml;
 import com.amihaiemil.eoyaml.YamlMapping;
-import com.artipie.asto.Content;
-import com.artipie.asto.Key;
-import com.artipie.asto.Storage;
-import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.http.hm.RsHasBody;
 import com.artipie.http.hm.SliceHasResponse;
 import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RqMethod;
+import com.artipie.management.FakeRepoPerms;
 import java.nio.charset.StandardCharsets;
 import javax.json.Json;
 import javax.json.JsonObject;
+import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 
@@ -61,12 +59,9 @@ final class GetPermissionsSliceTest {
     void shouldReturnsPermissionsList() {
         final String read = "readSourceArtifacts";
         final String cache = "populateCaches";
-        final Storage storage = new InMemoryStorage();
-        storage.save(new Key.From(this.nameYaml(read)), Content.EMPTY).join();
-        storage.save(new Key.From(this.nameYaml(cache)), Content.EMPTY).join();
         MatcherAssert.assertThat(
             new GetPermissionsSlice(
-                storage, GetPermissionsSliceTest.META
+                new FakeRepoPerms(new ListOf<>(cache, read)), GetPermissionsSliceTest.META
             ),
             new SliceHasResponse(
                 new RsHasBody(
@@ -88,9 +83,5 @@ final class GetPermissionsSliceTest {
                     "%sapi/security/permissions/%s", GetPermissionsSliceTest.BASE, name
                 )
             ).build();
-    }
-
-    private String nameYaml(final String name) {
-        return String.format("%s.yaml", name);
     }
 }
