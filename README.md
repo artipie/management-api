@@ -13,7 +13,7 @@
 
 ## Artipie management API
 
-This library contains management API and dashboard for Artipie. REST API allows to 
+This library contains management API and dashboard for Artipie. REST API allows to:
 
 - create repositories
 - manage users
