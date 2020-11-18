@@ -43,7 +43,6 @@ import javax.json.JsonObject;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -88,12 +87,11 @@ class GetPermissionSliceTest {
     }
 
     @Test
-    @Disabled
     void returnsEmptyUsersIfNoPermissionsSet() {
         final String repo = "docker";
         new RepoConfigYaml(repo).saveTo(this.storage, repo);
         MatcherAssert.assertThat(
-            new GetPermissionSlice(this.storage, new FakeRepoPerms()),
+            new GetPermissionSlice(this.storage, new RepoPermissions.FromSettings(this.storage)),
             new SliceHasResponse(
                 new RsHasBody(
                     this.response(
@@ -109,7 +107,6 @@ class GetPermissionSliceTest {
     }
 
     @Test
-    @Disabled
     void returnsUsersAndPermissionsList() {
         final String repo = "maven";
         final String john = "john";
@@ -130,7 +127,7 @@ class GetPermissionSliceTest {
             )
         ).saveTo(this.storage, repo);
         MatcherAssert.assertThat(
-            new GetPermissionSlice(this.storage, new FakeRepoPerms()),
+            new GetPermissionSlice(this.storage, new RepoPermissions.FromSettings(this.storage)),
             new SliceHasResponse(
                 new RsHasBody(
                     this.response(

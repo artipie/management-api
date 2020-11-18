@@ -38,6 +38,7 @@ import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.management.FakeRepoPerms;
 import com.artipie.management.RepoConfigYaml;
+import com.artipie.management.RepoPermissions;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -47,7 +48,6 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -80,13 +80,12 @@ class AddUpdatePermissionSliceTest {
     }
 
     @Test
-    @Disabled
     void updatesPermissionsAndPatterns() throws IOException {
         final String repo = "maven";
         new RepoConfigYaml(repo).saveTo(this.storage, repo);
         MatcherAssert.assertThat(
             "Returns 200 OK",
-            new AddUpdatePermissionSlice(new FakeRepoPerms()),
+            new AddUpdatePermissionSlice(new RepoPermissions.FromSettings(this.storage)),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.OK),
                 new RequestLine(RqMethod.PUT, String.format("/api/security/permissions/%s", repo)),
@@ -153,13 +152,12 @@ class AddUpdatePermissionSliceTest {
     }
 
     @Test
-    @Disabled
     void doesNotAddReadersGroupTwice() {
         final String repo = "maven";
         new RepoConfigYaml(repo).saveTo(this.storage, repo);
         MatcherAssert.assertThat(
             "Returns 200 OK",
-            new AddUpdatePermissionSlice(new FakeRepoPerms()),
+            new AddUpdatePermissionSlice(new RepoPermissions.FromSettings(this.storage)),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.OK),
                 new RequestLine(RqMethod.PUT, String.format("/api/security/permissions/%s", repo)),
