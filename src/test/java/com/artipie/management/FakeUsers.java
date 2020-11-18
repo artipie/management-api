@@ -24,9 +24,16 @@
 package com.artipie.management;
 
 import com.artipie.http.auth.Authentication;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.apache.commons.lang3.NotImplementedException;
+import org.cactoos.map.MapEntry;
+import org.cactoos.map.MapOf;
 
 /**
  * Fake {@link Users} implementation.
@@ -35,27 +42,94 @@ import org.apache.commons.lang3.NotImplementedException;
  *  implementation, enable DeleteUserSliceTest#returnsNotFoundIfCredentialsAreEmpty() test method.
  *  `Users.FromStorageYaml` should stay in artipie and be removed from this repository.
  */
-@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public final class FakeUsers implements Users {
+
+    /**
+     * Users.
+     */
+    private final Map<User, Password> users;
+
+    /**
+     * Primary ctor.
+     * @param users Users and passwords
+     */
+    public FakeUsers(final Map<User, Password> users) {
+        this.users = users;
+    }
+
+    /**
+     * Empty users.
+     */
+    public FakeUsers() {
+        this(Collections.emptyMap());
+    }
+
+    /**
+     * Primary ctor.
+     * @param name User name
+     */
+    public FakeUsers(final String name) {
+        this(new HashMap<>(new MapOf<>(new MapEntry<>(new User(name), new Password()))));
+    }
 
     @Override
     public CompletionStage<List<User>> list() {
-        throw new NotImplementedException("Not implemented yet");
+        final CompletableFuture<List<User>> res = new CompletableFuture<>();
+        res.complete(new ArrayList<>(this.users.keySet()));
+        return res;
     }
 
     @Override
     public CompletionStage<Void> add(final User user, final String pswd,
         final PasswordFormat format) {
-        throw new NotImplementedException("Not implemented yet");
+        this.users.put(user, new Password(pswd, format));
+        return CompletableFuture.allOf();
     }
 
     @Override
     public CompletionStage<Void> remove(final String username) {
-        throw new NotImplementedException("Not implemented yet");
+        this.users.keySet().stream().filter(user -> user.name().equals(username))
+            .findFirst().ifPresent(this.users::remove);
+        return CompletableFuture.allOf();
     }
 
     @Override
     public CompletionStage<Authentication> auth() {
-        throw new NotImplementedException("Not implemented yet");
+        throw new NotImplementedException("Not implemented");
+    }
+
+    /**
+     * Password.
+     * @since 0.1
+     */
+    public static final class Password {
+
+        /**
+         * Password value.
+         */
+        private final String value;
+
+        /**
+         * Password format.
+         */
+        private final PasswordFormat frmt;
+
+        /**
+         * Ctor.
+         * @param value Password value
+         * @param format Password format
+         */
+        public Password(final String value, final PasswordFormat format) {
+            this.value = value;
+            this.frmt = format;
+        }
+
+        /**
+         * Dummy password.
+         */
+        Password() {
+            this("123", PasswordFormat.PLAIN);
+        }
+
     }
 }
