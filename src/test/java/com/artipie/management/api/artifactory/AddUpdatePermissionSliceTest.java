@@ -23,13 +23,7 @@
  */
 package com.artipie.management.api.artifactory;
 
-import com.amihaiemil.eoyaml.Yaml;
-import com.amihaiemil.eoyaml.YamlMapping;
 import com.artipie.asto.Content;
-import com.artipie.asto.Key;
-import com.artipie.asto.Storage;
-import com.artipie.asto.ext.PublisherAs;
-import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.http.Headers;
 import com.artipie.http.hm.RsHasStatus;
 import com.artipie.http.hm.SliceHasResponse;
@@ -37,17 +31,12 @@ import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.management.FakeRepoPerms;
-import com.artipie.management.RepoConfigYaml;
 import com.artipie.management.RepoPermissions;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.List;
 import java.util.stream.Collectors;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.hamcrest.core.IsEqual;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -57,16 +46,6 @@ import org.junit.jupiter.api.Test;
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class AddUpdatePermissionSliceTest {
-
-    /**
-     * Storage.
-     */
-    private Storage storage;
-
-    @BeforeEach
-    void init() {
-        this.storage = new InMemoryStorage();
-    }
 
     @Test
     void returnsBadRequestOnInvalidRequest() {
@@ -80,12 +59,12 @@ class AddUpdatePermissionSliceTest {
     }
 
     @Test
-    void updatesPermissionsAndPatterns() throws IOException {
+    void updatesPermissionsAndPatterns() {
         final String repo = "maven";
-        new RepoConfigYaml(repo).saveTo(this.storage, repo);
+        final FakeRepoPerms perms = new FakeRepoPerms(repo);
         MatcherAssert.assertThat(
             "Returns 200 OK",
-            new AddUpdatePermissionSlice(new RepoPermissions.FromSettings(this.storage)),
+            new AddUpdatePermissionSlice(perms),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.OK),
                 new RequestLine(RqMethod.PUT, String.format("/api/security/permissions/%s", repo)),
@@ -95,32 +74,33 @@ class AddUpdatePermissionSliceTest {
         );
         MatcherAssert.assertThat(
             "Sets permissions for bob",
-            this.permissionsFor(repo, "bob"),
+            perms.permissionsFor(repo, "bob"),
             Matchers.containsInAnyOrder("read", "write", "*")
         );
         MatcherAssert.assertThat(
             "Sets permissions for alice",
-            this.permissionsFor(repo, "alice"),
+            perms.permissionsFor(repo, "alice"),
             Matchers.containsInAnyOrder("write", "read")
         );
         MatcherAssert.assertThat(
             "Sets permissions for john",
-            this.permissionsFor(repo, "john"),
+            perms.permissionsFor(repo, "john"),
             Matchers.containsInAnyOrder("*")
         );
         MatcherAssert.assertThat(
             "Sets patterns",
-            this.patterns(repo),
+            perms.patterns(repo).toCompletableFuture().join().stream()
+                .map(RepoPermissions.PathPattern::string).collect(Collectors.toList()),
             Matchers.contains("**", "maven/**")
         );
         MatcherAssert.assertThat(
             "Sets readers group",
-            this.permissionsFor(repo, "/readers"),
+            perms.permissionsFor(repo, "/readers"),
             Matchers.contains("read")
         );
         MatcherAssert.assertThat(
             "Sets dev-leads group",
-            this.permissionsFor(repo, "/dev-leads"),
+            perms.permissionsFor(repo, "/dev-leads"),
             Matchers.contains("read", "write")
         );
     }
@@ -128,7 +108,6 @@ class AddUpdatePermissionSliceTest {
     @Test
     void validatesPatterns() {
         final String repo = "docker";
-        new RepoConfigYaml(repo).saveTo(this.storage, repo);
         MatcherAssert.assertThat(
             new AddUpdatePermissionSlice(new FakeRepoPerms()),
             new SliceHasResponse(
@@ -154,10 +133,10 @@ class AddUpdatePermissionSliceTest {
     @Test
     void doesNotAddReadersGroupTwice() {
         final String repo = "maven";
-        new RepoConfigYaml(repo).saveTo(this.storage, repo);
+        final FakeRepoPerms perms = new FakeRepoPerms(repo);
         MatcherAssert.assertThat(
             "Returns 200 OK",
-            new AddUpdatePermissionSlice(new RepoPermissions.FromSettings(this.storage)),
+            new AddUpdatePermissionSlice(perms),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.OK),
                 new RequestLine(RqMethod.PUT, String.format("/api/security/permissions/%s", repo)),
@@ -165,35 +144,11 @@ class AddUpdatePermissionSliceTest {
                 new Content.From(this.json(true).getBytes(StandardCharsets.UTF_8))
             )
         );
-        final String yaml = new PublisherAs(
-            this.storage.value(new Key.From(String.format("%s.yaml", repo))).join()
-        ).asciiString().toCompletableFuture().join();
         MatcherAssert.assertThat(
-            yaml.indexOf("/readers"),
-            new IsEqual<>(yaml.lastIndexOf("/readers"))
+            perms.permissions(repo).toCompletableFuture().join().stream()
+                .filter(item -> item.username().equals("/readers")).count(),
+            new IsEqual<>(1L)
         );
-    }
-
-    private List<String> permissionsFor(final String repo, final String user)
-        throws IOException {
-        return this.repo(repo).yamlMapping("permissions").yamlSequence(user)
-            .values().stream().map(node -> node.asScalar().value())
-            .collect(Collectors.toList());
-    }
-
-    private Collection<String> patterns(final String repo)
-        throws IOException {
-        return this.repo(repo)
-            .yamlSequence("permissions_include_patterns")
-            .values().stream().map(node -> node.asScalar().value())
-            .collect(Collectors.toList());
-    }
-
-    private YamlMapping repo(final String repo) throws IOException {
-        return Yaml.createYamlInput(
-            new PublisherAs(this.storage.value(new Key.From(String.format("%s.yaml", repo))).join())
-                .asciiString().toCompletableFuture().join()
-        ).readYamlMapping().yamlMapping("repo");
     }
 
     private String json(final boolean readers) {
