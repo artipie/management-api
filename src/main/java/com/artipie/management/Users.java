@@ -170,8 +170,7 @@ public interface Users {
                 final User user = (User) other;
                 res = Objects.equals(this.uname, user.uname)
                     && Objects.equals(this.mail, user.mail)
-                    && this.ugroups.size() == user.ugroups.size()
-                    && this.ugroups.containsAll(user.ugroups);
+                    && Objects.equals(this.ugroups, user.ugroups);
             }
             return res;
         }
