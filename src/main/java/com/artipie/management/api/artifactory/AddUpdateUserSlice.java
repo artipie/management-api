@@ -44,7 +44,6 @@ import javax.json.JsonString;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.cactoos.list.ListOf;
 import org.reactivestreams.Publisher;
 
 /**
@@ -115,9 +114,7 @@ public final class AddUpdateUserSlice implements Slice {
                     set.add("readers");
                     res = Optional.of(
                         new ImmutablePair<>(
-                            new Users.User(
-                                name, Optional.of(json.getString(email)), new ListOf<>(set)
-                            ),
+                            new Users.User(name, Optional.of(json.getString(email)), set),
                             json.getString(pswd)
                         )
                     );
