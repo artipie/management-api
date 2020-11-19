@@ -23,37 +23,28 @@
  */
 package com.artipie.management.api.artifactory;
 
-import com.amihaiemil.eoyaml.Yaml;
-import com.amihaiemil.eoyaml.YamlMapping;
 import com.artipie.asto.Content;
-import com.artipie.asto.Key;
-import com.artipie.asto.Storage;
-import com.artipie.asto.ext.PublisherAs;
-import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.http.Headers;
 import com.artipie.http.hm.RsHasStatus;
 import com.artipie.http.hm.SliceHasResponse;
 import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
-import com.artipie.management.CredsConfigYaml;
 import com.artipie.management.FakeUsers;
 import com.artipie.management.Users;
 import io.reactivex.Flowable;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 import javax.json.Json;
 import javax.json.JsonObjectBuilder;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.cactoos.list.ListOf;
+import org.cactoos.set.SetOf;
 import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.hamcrest.core.IsEqual;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -65,16 +56,6 @@ import org.junit.jupiter.params.provider.EnumSource;
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 final class AddUpdateUserSliceTest {
-
-    /**
-     * Test storage.
-     */
-    private Storage storage;
-
-    @BeforeEach
-    void setUp() {
-        this.storage = new InMemoryStorage();
-    }
 
     @ParameterizedTest
     @EnumSource(value = RqMethod.class, names = {"PUT", "POST"})
@@ -107,7 +88,7 @@ final class AddUpdateUserSliceTest {
 
     @ParameterizedTest
     @EnumSource(value = RqMethod.class, names = {"PUT", "POST"})
-    void returnsOkIfUserWasAddedToCredentials(final RqMethod rqmeth) throws IOException {
+    void returnsOkIfUserWasAddedToCredentials(final RqMethod rqmeth) {
         final String username = "mark";
         final String pswd = "abc123";
         final RequestLine rqline = new RequestLine(
@@ -116,64 +97,70 @@ final class AddUpdateUserSliceTest {
         );
         final String ateam = "a-team";
         final String bteam = "b-team";
-        new CredsConfigYaml().withUsers("person").saveTo(this.storage);
+        final FakeUsers users = new FakeUsers("person");
         MatcherAssert.assertThat(
             "AddUpdateUserSlice response should be OK",
-            new AddUpdateUserSlice(
-                new Users.FromStorageYaml(this.storage, new Key.From("_credentials.yaml"))
-            ).response(
+            new AddUpdateUserSlice(users).response(
                 rqline.toString(), Headers.EMPTY,
                 this.jsonBody(pswd, username, new ListOf<String>(ateam, bteam))
             ),
             new RsHasStatus(RsStatus.OK)
         );
         MatcherAssert.assertThat(
-            "User with correct password should be added",
-            this.readCreds(username).string("pass"),
-            new IsEqual<>(DigestUtils.sha256Hex(pswd))
+            "User with correct groups and email was added",
+            users.user(username),
+            new IsEqual<>(
+                new Users.User(
+                    username,
+                    Optional.of(String.format("%s@example.com", username)),
+                    new SetOf<String>("readers", ateam, bteam)
+                )
+            )
         );
         MatcherAssert.assertThat(
-            "User has groups",
-            this.readCreds(username).yamlSequence("groups")
-                .values().stream().map(node -> node.asScalar().value())
-                .collect(Collectors.toList()),
-            Matchers.containsInAnyOrder(
-                ateam, bteam, "readers"
+            "User with correct password should be added",
+            users.pswd(username),
+            new IsEqual<>(
+                new FakeUsers.Password(DigestUtils.sha256Hex(pswd), Users.PasswordFormat.SHA256)
             )
         );
     }
 
     @ParameterizedTest
     @EnumSource(value = RqMethod.class, names = {"PUT", "POST"})
-    void returnsOkIfUserWasUpdated(final RqMethod rqmeth) throws IOException {
+    void returnsOkIfUserWasUpdated(final RqMethod rqmeth) {
         final String username = "mike";
         final String newpswd = "qwerty123";
         final RequestLine rqline = new RequestLine(
             rqmeth,
             String.format("/api/security/users/%s", username)
         );
-        new CredsConfigYaml().withUsers(username).saveTo(this.storage);
+        final FakeUsers users = new FakeUsers(username);
         MatcherAssert.assertThat(
             "AddUpdateUserSlice response should be OK",
-            new AddUpdateUserSlice(
-                new Users.FromStorageYaml(this.storage, new Key.From("_credentials.yaml"))
-            ).response(
+            new AddUpdateUserSlice(users).response(
                 rqline.toString(), Headers.EMPTY,
                 this.jsonBody(newpswd, username, Collections.emptyList())
             ),
             new RsHasStatus(RsStatus.OK)
         );
         MatcherAssert.assertThat(
-            "User with updated password should return",
-            this.readCreds(username).string("pass"),
-            new IsEqual<>(DigestUtils.sha256Hex(newpswd))
+            "Groups and email were updated",
+            users.user(username),
+            new IsEqual<>(
+                new Users.User(
+                    username,
+                    Optional.of(String.format("%s@example.com", username)),
+                    new SetOf<String>("readers")
+                )
+            )
         );
         MatcherAssert.assertThat(
-            "Yaml has readers group only",
-            this.readCreds(username).yamlSequence("groups")
-                .values().stream().map(node -> node.asScalar().value())
-                .collect(Collectors.toList()),
-            Matchers.contains("readers")
+            "Password was updated",
+            users.pswd(username),
+            new IsEqual<>(
+                new FakeUsers.Password(DigestUtils.sha256Hex(newpswd), Users.PasswordFormat.SHA256)
+            )
         );
     }
 
@@ -188,10 +175,4 @@ final class AddUpdateUserSliceTest {
         return Flowable.fromArray(ByteBuffer.wrap(json.build().toString().getBytes()));
     }
 
-    private YamlMapping readCreds(final String username) throws IOException {
-        return Yaml.createYamlInput(
-            new PublisherAs(this.storage.value(new Key.From("_credentials.yaml")).join())
-                .asciiString().toCompletableFuture().join()
-        ).readYamlMapping().yamlMapping("credentials").yamlMapping(username);
-    }
 }

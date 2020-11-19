@@ -37,9 +37,10 @@ import com.artipie.management.FakeUsers;
 import com.artipie.management.Users;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
-import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import javax.json.Json;
-import org.cactoos.list.ListOf;
+import org.cactoos.set.SetOf;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -70,7 +71,7 @@ class GetUserSliceTest {
         final Key key = new Key.From("_credentials.yaml");
         new CredsConfigYaml().withUsers("john").saveTo(storage, key);
         MatcherAssert.assertThat(
-            new GetUserSlice(new Users.FromStorageYaml(storage, key)),
+            new GetUserSlice(new FakeUsers()),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.NOT_FOUND),
                 new RequestLine(RqMethod.GET, "/api/security/users/josh")
@@ -81,11 +82,8 @@ class GetUserSliceTest {
     @Test
     void returnsJsonFoundIfUserFound() {
         final String username = "jerry";
-        final Storage storage = new InMemoryStorage();
-        final Key key = new Key.From("_cred.yaml");
-        new CredsConfigYaml().withUsers(username).saveTo(storage, key);
         MatcherAssert.assertThat(
-            new GetUserSlice(new Users.FromStorageYaml(storage, key)),
+            new GetUserSlice(new FakeUsers(username)),
             new SliceHasResponse(
                 Matchers.allOf(
                     new RsHasStatus(RsStatus.OK),
@@ -111,12 +109,9 @@ class GetUserSliceTest {
     @Test
     void returnsJsonWithGroupsWhenFound() {
         final String username = "mark";
-        final Storage storage = new InMemoryStorage();
-        final Key key = new Key.From("_cred.yaml");
-        final List<String> groups = new ListOf<>("readers", "newbies");
-        new CredsConfigYaml().withUserAndGroups(username, groups).saveTo(storage, key);
+        final Set<String> groups = new SetOf<>("readers", "newbies");
         MatcherAssert.assertThat(
-            new GetUserSlice(new Users.FromStorageYaml(storage, key)),
+            new GetUserSlice(new FakeUsers(new Users.User(username, Optional.empty(), groups))),
             new SliceHasResponse(
                 Matchers.allOf(
                     new RsHasStatus(RsStatus.OK),
