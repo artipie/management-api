@@ -23,12 +23,7 @@
  */
 package com.artipie.management.api;
 
-import com.amihaiemil.eoyaml.Yaml;
 import com.artipie.asto.Content;
-import com.artipie.asto.Key;
-import com.artipie.asto.Storage;
-import com.artipie.asto.ext.PublisherAs;
-import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.http.Headers;
 import com.artipie.http.hm.RsHasHeaders;
 import com.artipie.http.hm.RsHasStatus;
@@ -36,14 +31,12 @@ import com.artipie.http.hm.SliceHasResponse;
 import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
-import com.artipie.management.CredsConfigYaml;
+import com.artipie.management.FakeUsers;
 import com.artipie.management.Users;
-import java.io.IOException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.hamcrest.core.IsEqual;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -54,30 +47,14 @@ import org.junit.jupiter.api.Test;
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class ApiChangeUserPasswordTest {
 
-    /**
-     * Test storage.
-     */
-    private Storage storage;
-
-    /**
-     * Credentials key.
-     */
-    private Key key;
-
-    @BeforeEach
-    void init() {
-        this.storage = new InMemoryStorage();
-        this.key = new Key.From("_credentials.yaml");
-    }
-
     @Test
-    void returnsFoundIfUserWasAddedToCredentials() throws IOException {
+    void returnsFoundIfUserWasAddedToCredentials() {
         final String username = "mike";
         final String pswd = "qwerty123";
-        new CredsConfigYaml().withUsers("person").saveTo(this.storage, this.key);
+        final FakeUsers users = new FakeUsers(username);
         MatcherAssert.assertThat(
             "ApiChangeUserPassword response should be FOUND",
-            new ApiChangeUserPassword(new Users.FromStorageYaml(this.storage, this.key)),
+            new ApiChangeUserPassword(users),
             new SliceHasResponse(
                 Matchers.allOf(
                     new RsHasStatus(RsStatus.FOUND),
@@ -92,19 +69,21 @@ class ApiChangeUserPasswordTest {
         );
         MatcherAssert.assertThat(
             "User with correct password should be added",
-            this.getPasswordFromYaml(username),
-            new IsEqual<>(DigestUtils.sha256Hex(pswd))
+            users.pswd(username),
+            new IsEqual<>(
+                new FakeUsers.Password(DigestUtils.sha256Hex(pswd), Users.PasswordFormat.SHA256)
+            )
         );
     }
 
     @Test
-    void returnsFoundIfPasswordWasUpdated() throws IOException {
+    void returnsFoundIfPasswordWasUpdated() {
         final String username = "john";
         final String pswd = "0000";
-        new CredsConfigYaml().withUsers(username).saveTo(this.storage, this.key);
+        final FakeUsers users = new FakeUsers(username);
         MatcherAssert.assertThat(
             "ApiChangeUserPassword response should be FOUND",
-            new ApiChangeUserPassword(new Users.FromStorageYaml(this.storage, this.key)),
+            new ApiChangeUserPassword(users),
             new SliceHasResponse(
                 Matchers.allOf(
                     new RsHasStatus(RsStatus.FOUND),
@@ -119,18 +98,11 @@ class ApiChangeUserPasswordTest {
         );
         MatcherAssert.assertThat(
             "User with correct password should be added",
-            this.getPasswordFromYaml(username),
-            new IsEqual<>(DigestUtils.sha256Hex(pswd))
+            users.pswd(username),
+            new IsEqual<>(
+                new FakeUsers.Password(DigestUtils.sha256Hex(pswd), Users.PasswordFormat.SHA256)
+            )
         );
-    }
-
-    private String getPasswordFromYaml(final String username) throws IOException {
-        return Yaml.createYamlInput(
-            new PublisherAs(this.storage.value(this.key).join())
-                .asciiString().toCompletableFuture().join()
-        ).readYamlMapping().value("credentials")
-            .asMapping().value(username)
-            .asMapping().string("pass");
     }
 
     private Content body(final String pswd) {

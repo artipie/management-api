@@ -25,15 +25,11 @@ package com.artipie.management.api.artifactory;
 
 import com.amihaiemil.eoyaml.Yaml;
 import com.amihaiemil.eoyaml.YamlMapping;
-import com.artipie.asto.Key;
-import com.artipie.asto.Storage;
-import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.http.hm.RsHasBody;
 import com.artipie.http.hm.SliceHasResponse;
 import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RqMethod;
-import com.artipie.management.CredsConfigYaml;
-import com.artipie.management.Users;
+import com.artipie.management.FakeUsers;
 import java.nio.charset.StandardCharsets;
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -62,12 +58,9 @@ class GetUsersSliceTest {
     void returnsUsersList() {
         final String jane = "jane";
         final String john = "john";
-        final Storage storage = new InMemoryStorage();
-        final Key key = new Key.From("_cred.yaml");
-        new CredsConfigYaml().withUsers(jane, john).saveTo(storage, key);
         MatcherAssert.assertThat(
             new GetUsersSlice(
-                new Users.FromStorageYaml(storage, key),
+                new FakeUsers(jane, john),
                 GetUsersSliceTest.META
             ),
             new SliceHasResponse(

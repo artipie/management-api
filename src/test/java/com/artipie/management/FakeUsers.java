@@ -26,21 +26,19 @@ package com.artipie.management;
 import com.artipie.http.auth.Authentication;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.NotImplementedException;
-import org.cactoos.map.MapEntry;
-import org.cactoos.map.MapOf;
 
 /**
  * Fake {@link Users} implementation.
  * @since 0.1
- * @todo #2:30min Implement methods and use this class in tests instead of Users.FromStorageYaml
- *  implementation, enable DeleteUserSliceTest#returnsNotFoundIfCredentialsAreEmpty() test method.
- *  `Users.FromStorageYaml` should stay in artipie and be removed from this repository.
  */
 public final class FakeUsers implements Users {
 
@@ -65,11 +63,19 @@ public final class FakeUsers implements Users {
     }
 
     /**
-     * Primary ctor.
-     * @param name User name
+     * Ctor.
+     * @param usrs Users
      */
-    public FakeUsers(final String name) {
-        this(new HashMap<>(new MapOf<>(new MapEntry<>(new User(name), new Password()))));
+    public FakeUsers(final Users.User... usrs) {
+        this(Stream.of(usrs).collect(Collectors.toMap(user -> user, ignored -> new Password())));
+    }
+
+    /**
+     * Ctor.
+     * @param names User names
+     */
+    public FakeUsers(final String... names) {
+        this(Stream.of(names).collect(Collectors.toMap(User::new, ignored -> new Password())));
     }
 
     @Override
@@ -94,6 +100,28 @@ public final class FakeUsers implements Users {
     @Override
     public CompletionStage<Authentication> auth() {
         throw new NotImplementedException("Not implemented");
+    }
+
+    /**
+     * Get password by username.
+     * @param name User name
+     * @return Password info
+     * @throws NoSuchElementException If user with given name is not found
+     */
+    public Password pswd(final String name) {
+        return this.users.keySet().stream().filter(user -> user.name().equals(name))
+            .findFirst().map(this.users::get).orElseThrow();
+    }
+
+    /**
+     * Get user by username.
+     * @param name User name
+     * @return User info
+     * @throws NoSuchElementException If user with given name is not found
+     */
+    public Users.User user(final String name) {
+        return this.users.keySet().stream().filter(user -> user.name().equals(name))
+            .findFirst().orElseThrow();
     }
 
     /**
@@ -129,5 +157,23 @@ public final class FakeUsers implements Users {
             this("123", PasswordFormat.PLAIN);
         }
 
+        @Override
+        public boolean equals(final Object another) {
+            final boolean res;
+            if (this == another) {
+                res = true;
+            } else if (another == null || this.getClass() != another.getClass()) {
+                res = false;
+            } else {
+                final Password password = (Password) another;
+                res = password.value.equals(this.value) && password.frmt == this.frmt;
+            }
+            return res;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(this.value, this.frmt);
+        }
     }
 }
