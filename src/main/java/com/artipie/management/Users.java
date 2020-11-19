@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -103,7 +104,7 @@ public interface Users {
         /**
          * User groups.
          */
-        private final List<String> ugroups;
+        private final Set<String> ugroups;
 
         /**
          * Ctor.
@@ -111,7 +112,7 @@ public interface Users {
          * @param mail User email
          * @param groups User groups
          */
-        public User(final String name, final Optional<String> mail, final List<String> groups) {
+        public User(final String name, final Optional<String> mail, final Set<String> groups) {
             this.uname = name;
             this.mail = mail;
             this.ugroups = groups;
@@ -123,7 +124,7 @@ public interface Users {
          * @param email User email
          */
         public User(final String name, final Optional<String> email) {
-            this(name, email, Collections.emptyList());
+            this(name, email, Collections.emptySet());
         }
 
         /**
@@ -131,7 +132,7 @@ public interface Users {
          * @param name Username
          */
         public User(final String name) {
-            this(name, Optional.empty(), Collections.emptyList());
+            this(name, Optional.empty(), Collections.emptySet());
         }
 
         /**
@@ -154,7 +155,7 @@ public interface Users {
          * Get user groups.
          * @return List of the user groups
          */
-        public List<String> groups() {
+        public Set<String> groups() {
             return this.ugroups;
         }
 

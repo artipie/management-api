@@ -37,10 +37,10 @@ import com.artipie.management.FakeUsers;
 import com.artipie.management.Users;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import javax.json.Json;
-import org.cactoos.list.ListOf;
+import org.cactoos.set.SetOf;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -109,7 +109,7 @@ class GetUserSliceTest {
     @Test
     void returnsJsonWithGroupsWhenFound() {
         final String username = "mark";
-        final List<String> groups = new ListOf<>("readers", "newbies");
+        final Set<String> groups = new SetOf<>("readers", "newbies");
         MatcherAssert.assertThat(
             new GetUserSlice(new FakeUsers(new Users.User(username, Optional.empty(), groups))),
             new SliceHasResponse(

@@ -42,6 +42,7 @@ import javax.json.Json;
 import javax.json.JsonObjectBuilder;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.cactoos.list.ListOf;
+import org.cactoos.set.SetOf;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -112,7 +113,7 @@ final class AddUpdateUserSliceTest {
                 new Users.User(
                     username,
                     Optional.of(String.format("%s@example.com", username)),
-                    new ListOf<String>("readers", ateam, bteam)
+                    new SetOf<String>("readers", ateam, bteam)
                 )
             )
         );
@@ -150,7 +151,7 @@ final class AddUpdateUserSliceTest {
                 new Users.User(
                     username,
                     Optional.of(String.format("%s@example.com", username)),
-                    new ListOf<String>("readers")
+                    new SetOf<String>("readers")
                 )
             )
         );
