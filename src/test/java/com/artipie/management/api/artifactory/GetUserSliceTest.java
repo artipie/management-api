@@ -32,7 +32,6 @@ import com.artipie.http.hm.SliceHasResponse;
 import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
-import com.artipie.management.CredsConfigYaml;
 import com.artipie.management.FakeUsers;
 import com.artipie.management.Users;
 import java.nio.charset.StandardCharsets;
@@ -69,7 +68,6 @@ class GetUserSliceTest {
     void returnsNotFoundIfUserIsNotFoundInCredentials() {
         final Storage storage = new InMemoryStorage();
         final Key key = new Key.From("_credentials.yaml");
-        new CredsConfigYaml().withUsers("john").saveTo(storage, key);
         MatcherAssert.assertThat(
             new GetUserSlice(new FakeUsers()),
             new SliceHasResponse(
