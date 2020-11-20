@@ -23,9 +23,6 @@
  */
 package com.artipie.management.api.artifactory;
 
-import com.artipie.asto.Key;
-import com.artipie.asto.Storage;
-import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.http.hm.RsHasBody;
 import com.artipie.http.hm.RsHasStatus;
 import com.artipie.http.hm.SliceHasResponse;
@@ -66,8 +63,6 @@ class GetUserSliceTest {
 
     @Test
     void returnsNotFoundIfUserIsNotFoundInCredentials() {
-        final Storage storage = new InMemoryStorage();
-        final Key key = new Key.From("_credentials.yaml");
         MatcherAssert.assertThat(
             new GetUserSlice(new FakeUsers()),
             new SliceHasResponse(
