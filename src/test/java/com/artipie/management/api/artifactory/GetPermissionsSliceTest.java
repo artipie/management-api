@@ -33,7 +33,6 @@ import com.artipie.management.FakeRepoPerms;
 import java.nio.charset.StandardCharsets;
 import javax.json.Json;
 import javax.json.JsonObject;
-import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 
@@ -61,7 +60,7 @@ final class GetPermissionsSliceTest {
         final String cache = "populateCaches";
         MatcherAssert.assertThat(
             new GetPermissionsSlice(
-                new FakeRepoPerms(new ListOf<>(cache, read)), GetPermissionsSliceTest.META
+                new FakeRepoPerms(cache, read), GetPermissionsSliceTest.META
             ),
             new SliceHasResponse(
                 new RsHasBody(

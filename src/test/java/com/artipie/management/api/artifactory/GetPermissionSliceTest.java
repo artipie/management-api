@@ -23,6 +23,8 @@
  */
 package com.artipie.management.api.artifactory;
 
+import com.artipie.asto.Content;
+import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.http.hm.RsHasBody;
@@ -32,9 +34,7 @@ import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.management.FakeRepoPerms;
-import com.artipie.management.RepoConfigYaml;
 import com.artipie.management.RepoPermissions;
-import com.artipie.management.RepoPerms;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
@@ -89,9 +89,9 @@ class GetPermissionSliceTest {
     @Test
     void returnsEmptyUsersIfNoPermissionsSet() {
         final String repo = "docker";
-        new RepoConfigYaml(repo).saveTo(this.storage, repo);
+        this.storage.save(new Key.From(String.format("%s.yaml", repo)), Content.EMPTY);
         MatcherAssert.assertThat(
-            new GetPermissionSlice(this.storage, new RepoPermissions.FromSettings(this.storage)),
+            new GetPermissionSlice(this.storage, new FakeRepoPerms(repo)),
             new SliceHasResponse(
                 new RsHasBody(
                     this.response(
@@ -113,21 +113,23 @@ class GetPermissionSliceTest {
         final String readers = "readers";
         final String team = "team";
         final String mark = "mark";
-        new RepoConfigYaml(repo).withPermissions(
-            new RepoPerms(
-                List.of(
-                    new RepoPermissions.PermissionItem(john, new ListOf<>("read", "write")),
-                    new RepoPermissions.PermissionItem(mark, "*"),
-                    new RepoPermissions.PermissionItem(String.format("/%s", readers), "read"),
-                    new RepoPermissions.PermissionItem(
-                        String.format("/%s", team), new ListOf<>("write", "delete")
-                    )
-                ),
-                Collections.singletonList("**/*")
-            )
-        ).saveTo(this.storage, repo);
+        this.storage.save(new Key.From(String.format("%s.yaml", repo)), Content.EMPTY);
         MatcherAssert.assertThat(
-            new GetPermissionSlice(this.storage, new RepoPermissions.FromSettings(this.storage)),
+            new GetPermissionSlice(
+                this.storage,
+                new FakeRepoPerms(
+                    repo,
+                    List.of(
+                        new RepoPermissions.PermissionItem(john, new ListOf<>("read", "write")),
+                        new RepoPermissions.PermissionItem(mark, "*"),
+                        new RepoPermissions.PermissionItem(String.format("/%s", readers), "read"),
+                        new RepoPermissions.PermissionItem(
+                            String.format("/%s", team), new ListOf<>("write", "delete")
+                        )
+                    ),
+                    Collections.singletonList(new RepoPermissions.PathPattern("**/*"))
+                )
+            ),
             new SliceHasResponse(
                 new RsHasBody(
                     this.response(
