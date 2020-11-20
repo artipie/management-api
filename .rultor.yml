@@ -22,7 +22,7 @@ deploy:
 release:
   sensitive:
     - settings.xml
-  script: |-
+  script: |
     gpg --import /home/r/pubring.gpg
     gpg --allow-secret-key-import --no-tty --batch --import /home/r/secring.gpg
     mvn versions:set "-DnewVersion=${tag}" --settings ../settings.xml
@@ -32,4 +32,3 @@ architect:
   - yegor256
   - olegmoz
   - olenagerasimova
-
