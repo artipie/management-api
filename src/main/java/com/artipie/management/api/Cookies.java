@@ -47,7 +47,7 @@ import org.apache.commons.codec.binary.Hex;
  *
  * @since 0.1
  */
-final class Cookies {
+public final class Cookies {
 
     /**
      * Headers.

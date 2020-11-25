@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
  *
  * @since 0.1
  */
-final class ApiPermission implements Permission {
+public final class ApiPermission implements Permission {
 
     /**
      * URI path pattern.

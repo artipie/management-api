@@ -51,7 +51,7 @@ import org.reactivestreams.Publisher;
  * Repo {@code GET} API.
  * @since 0.1
  */
-final class ApiRepoGetSlice implements Slice {
+public final class ApiRepoGetSlice implements Slice {
 
     /**
      * URI path pattern.

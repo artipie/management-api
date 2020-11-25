@@ -55,7 +55,7 @@ import org.reactivestreams.Publisher;
  * @since 0.1
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
-final class ApiRepoCreateSlice implements Slice {
+public final class ApiRepoCreateSlice implements Slice {
 
     /**
      * URI path pattern.
