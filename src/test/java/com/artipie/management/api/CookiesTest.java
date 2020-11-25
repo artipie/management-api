@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
  * Test for {@link Cookies}.
  *
  * @since 0.1
- * @todo #2:30min Add tests for Cookies class.
+ * @todo (#2) - Add tests for Cookies class.
  *  `Cookies` class lacks test coverage for primary code flow branches.
  *  It is important that to check that proper user is extracted when headers contain session cookie.
  *  This might require `Cookie` class refactoring as the class depends on system environment.

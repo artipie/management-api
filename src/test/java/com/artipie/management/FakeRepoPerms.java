@@ -47,7 +47,7 @@ public final class FakeRepoPerms implements RepoPermissions {
 
     /**
      * Permissions.
-     * @todo #2:30min This structure is complicated and difficult to work with, let's create
+     * @todo (#2) - This structure is complicated and difficult to work with, let's create
      *  inner class to hold with objects and work with them.
      */
     private final Map<String, Pair<Collection<PermissionItem>, Collection<PathPattern>>> repos;
