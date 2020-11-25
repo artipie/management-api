@@ -86,7 +86,7 @@ public interface Users {
     /**
      * User.
      * @since 0.1
-     * @todo #569:30min Consider extending this class by adding password and its format, but pay
+     * @todo #2:30min Consider extending this class by adding password and its format, but pay
      *  attention that actually password is not always required. Do not forget about tests.
      */
     final class User {
