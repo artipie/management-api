@@ -57,7 +57,7 @@ import org.reactivestreams.Publisher;
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle CyclomaticComplexityCheck (500 lines)
  */
-final class ApiRepoUpdateSlice implements Slice {
+public final class ApiRepoUpdateSlice implements Slice {
 
     /**
      * URI path pattern.
@@ -73,7 +73,7 @@ final class ApiRepoUpdateSlice implements Slice {
      * New patch API.
      * @param storage Artipie settings storage
      */
-    ApiRepoUpdateSlice(final Storage storage) {
+    public ApiRepoUpdateSlice(final Storage storage) {
         this.storage = storage;
     }
 
