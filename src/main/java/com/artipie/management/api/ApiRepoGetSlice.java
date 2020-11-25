@@ -67,7 +67,7 @@ final class ApiRepoGetSlice implements Slice {
      * New repo API.
      * @param storage Artipie settings storage
      */
-    ApiRepoGetSlice(final Storage storage) {
+    public ApiRepoGetSlice(final Storage storage) {
         this.storage = storage;
     }
 

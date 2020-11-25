@@ -53,7 +53,7 @@ final class ApiPermission implements Permission {
      *
      * @param line HTTP request line.
      */
-    ApiPermission(final String line) {
+    public ApiPermission(final String line) {
         this.line = line;
     }
 

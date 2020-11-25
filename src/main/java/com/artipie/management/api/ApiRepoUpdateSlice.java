@@ -73,7 +73,7 @@ final class ApiRepoUpdateSlice implements Slice {
      * New patch API.
      * @param storage Artipie settings storage
      */
-    ApiRepoUpdateSlice(final Storage storage) {
+    public ApiRepoUpdateSlice(final Storage storage) {
         this.storage = storage;
     }
 

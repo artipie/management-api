@@ -59,7 +59,7 @@ final class Cookies {
      *
      * @param headers Headers.
      */
-    Cookies(final Iterable<Map.Entry<String, String>> headers) {
+    public Cookies(final Iterable<Map.Entry<String, String>> headers) {
         this.headers = headers;
     }
 

@@ -68,7 +68,7 @@ final class ApiChangeUserPassword implements Slice {
      * New API change password.
      * @param users Artipie users
      */
-    ApiChangeUserPassword(final Users users) {
+    public ApiChangeUserPassword(final Users users) {
         this.users = users;
     }
 

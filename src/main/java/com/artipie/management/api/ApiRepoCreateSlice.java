@@ -71,7 +71,7 @@ final class ApiRepoCreateSlice implements Slice {
      * New create API.
      * @param storage Artipie settings storage
      */
-    ApiRepoCreateSlice(final Storage storage) {
+    public ApiRepoCreateSlice(final Storage storage) {
         this.storage = storage;
     }
 
