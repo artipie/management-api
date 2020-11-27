@@ -34,12 +34,14 @@ import com.artipie.http.rs.RsWithStatus;
 import com.artipie.http.slice.SliceSimple;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import org.cactoos.list.ListOf;
 import org.reactivestreams.Publisher;
 
 /**
  * API authentication slice.
  *
  * @since 0.1
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public final class ApiAuthSlice implements Slice {
 
@@ -76,9 +78,9 @@ public final class ApiAuthSlice implements Slice {
         final String line,
         final Iterable<Map.Entry<String, String>> headers,
         final Publisher<ByteBuffer> body) {
-        final Permission permission = new Permission.All(
+        final Permission permission = new Permission.Any(
             new ApiPermission(line),
-            new Permission.ByName("api", this.perms)
+            new Permission.ByName(this.perms, () -> new ListOf<>("api"))
         );
         return new Cookies(headers).user().map(
             user -> {
