@@ -47,7 +47,7 @@ import org.apache.commons.codec.binary.Hex;
  *
  * @since 0.1
  */
-final class Cookies {
+public final class Cookies {
 
     /**
      * Headers.
@@ -59,7 +59,7 @@ final class Cookies {
      *
      * @param headers Headers.
      */
-    Cookies(final Iterable<Map.Entry<String, String>> headers) {
+    public Cookies(final Iterable<Map.Entry<String, String>> headers) {
         this.headers = headers;
     }
 

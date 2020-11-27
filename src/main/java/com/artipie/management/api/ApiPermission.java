@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
  *
  * @since 0.1
  */
-final class ApiPermission implements Permission {
+public final class ApiPermission implements Permission {
 
     /**
      * URI path pattern.
@@ -53,7 +53,7 @@ final class ApiPermission implements Permission {
      *
      * @param line HTTP request line.
      */
-    ApiPermission(final String line) {
+    public ApiPermission(final String line) {
         this.line = line;
     }
 

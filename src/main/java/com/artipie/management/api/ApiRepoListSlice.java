@@ -45,7 +45,7 @@ import org.reactivestreams.Publisher;
  * Repo list API.
  * @since 0.1
  */
-final class ApiRepoListSlice implements Slice {
+public final class ApiRepoListSlice implements Slice {
 
     /**
      * URI path pattern.
@@ -61,7 +61,7 @@ final class ApiRepoListSlice implements Slice {
      * New repo list API.
      * @param storage Artipie settings storage
      */
-    ApiRepoListSlice(final Storage storage) {
+    public ApiRepoListSlice(final Storage storage) {
         this.storage = storage;
     }
 
