@@ -30,7 +30,7 @@ import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 
 /**
- * Test for {@link Cookies}.
+ * Test for {@link FromEnv}.
  *
  * @since 0.1
  * @todo #231:30min Add tests for Cookies class.
@@ -43,7 +43,7 @@ class CookiesTest {
     @Test
     void shouldNotFindUserInEmptyHeaders() {
         MatcherAssert.assertThat(
-            new Cookies(Headers.EMPTY).user(),
+            new FromEnv().user(Headers.EMPTY),
             new IsEqual<>(Optional.empty())
         );
     }

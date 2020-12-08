@@ -41,7 +41,6 @@ import org.reactivestreams.Publisher;
  * API authentication slice.
  *
  * @since 0.1
- * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public final class ApiAuthSlice implements Slice {
 
@@ -61,28 +60,41 @@ public final class ApiAuthSlice implements Slice {
     private final Slice origin;
 
     /**
-     * Ctor.
-     *
-     * @param auth Authentication.
-     * @param perms Permissions.
-     * @param origin Origin slice
+     * Cookies.
      */
-    public ApiAuthSlice(final Authentication auth, final Permissions perms, final Slice origin) {
+    private final Cookies cookies;
+
+    /**
+     * Ctor.
+     * @param auth Authentication
+     * @param perms Permissions
+     * @param origin Origin slice
+     * @param cookies Cookies
+     * @checkstyle ParameterNumberCheck (10 lines)
+     */
+    public ApiAuthSlice(
+        final Authentication auth,
+        final Permissions perms,
+        final Slice origin,
+        final Cookies cookies
+    ) {
         this.auth = auth;
         this.perms = perms;
         this.origin = origin;
+        this.cookies = cookies;
     }
 
     @Override
     public Response response(
         final String line,
         final Iterable<Map.Entry<String, String>> headers,
-        final Publisher<ByteBuffer> body) {
-        final Permission permission = new Permission.Any(
+        final Publisher<ByteBuffer> body
+    ) {
+        final Permission permission = new Permission.All(
             new ApiPermission(line),
             new Permission.ByName(this.perms, () -> new ListOf<>("api"))
         );
-        return new Cookies(headers).user().map(
+        return this.cookies.user(headers).map(
             user -> {
                 final Slice slice;
                 if (permission.allowed(user)) {

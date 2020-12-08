@@ -47,18 +47,39 @@ import org.junit.jupiter.api.Test;
 class ApiAuthSliceTest {
 
     @Test
-    void usesBasicAndPermsWhenCookiesAreAbsent() {
+    void usesCookiesWhenPresent() {
         final String user = "aladdin";
         final String pswd = "open";
         MatcherAssert.assertThat(
             new ApiAuthSlice(
                 new Authentication.Single(user, pswd),
                 new Permissions.Single(user, "api"),
-                new SliceSimple(StandardRs.OK)
+                new SliceSimple(StandardRs.OK),
+                new Cookies.Fake(user)
             ),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.OK),
-                new RequestLine(RqMethod.GET, "/any"),
+                new RequestLine(RqMethod.GET, String.format("/%s", user)),
+                new Headers.From(new Authorization.Basic(user, pswd)),
+                new Content.Empty()
+            )
+        );
+    }
+
+    @Test
+    void usesCookiesAndRequiresPermissions() {
+        final String user = "aladdin";
+        final String pswd = "open";
+        MatcherAssert.assertThat(
+            new ApiAuthSlice(
+                new Authentication.Single(user, pswd),
+                new Permissions.Single("someone", "anything"),
+                new SliceSimple(StandardRs.OK),
+                new Cookies.Fake(user)
+            ),
+            new SliceHasResponse(
+                new RsHasStatus(RsStatus.FORBIDDEN),
+                new RequestLine(RqMethod.GET, String.format("/%s", user)),
                 new Headers.From(new Authorization.Basic(user, pswd)),
                 new Content.Empty()
             )
@@ -72,8 +93,9 @@ class ApiAuthSliceTest {
         MatcherAssert.assertThat(
             new ApiAuthSlice(
                 new Authentication.Single(user, pswd),
-                new Permissions.Single("someone", "anything"),
-                new SliceSimple(StandardRs.OK)
+                new Permissions.Single(user, "api"),
+                new SliceSimple(StandardRs.OK),
+                new Cookies.Fake()
             ),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.OK),
@@ -92,7 +114,8 @@ class ApiAuthSliceTest {
             new ApiAuthSlice(
                 new Authentication.Single(user, pswd),
                 new Permissions.Single("someone", "anything"),
-                new SliceSimple(StandardRs.OK)
+                new SliceSimple(StandardRs.OK),
+                new Cookies.Fake()
             ),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.FORBIDDEN),
