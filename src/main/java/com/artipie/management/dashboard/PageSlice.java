@@ -36,7 +36,7 @@ import org.reactivestreams.Publisher;
 
 /**
  * Slice to render HTML pages.
- * @since 0.10
+ * @since 0.2
  */
 final class PageSlice implements Slice {
 

@@ -28,7 +28,7 @@ import java.util.Map;
 
 /**
  * HTML page.
- * @since 0.10
+ * @since 0.2
  */
 interface Page {
 

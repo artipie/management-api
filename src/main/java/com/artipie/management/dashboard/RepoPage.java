@@ -47,7 +47,7 @@ import org.cactoos.map.MapOf;
 
 /**
  * Repository page.
- * @since 0.10
+ * @since 0.2
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 final class RepoPage implements Page {
