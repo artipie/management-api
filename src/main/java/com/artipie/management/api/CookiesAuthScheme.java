@@ -23,6 +23,7 @@
  */
 package com.artipie.management.api;
 
+import com.artipie.http.auth.AuthScheme;
 import com.artipie.http.auth.Authentication;
 import com.artipie.http.rq.RqHeaders;
 import com.jcabi.log.Logger;
@@ -38,6 +39,8 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import javax.crypto.Cipher;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
@@ -47,31 +50,24 @@ import org.apache.commons.codec.binary.Hex;
  *
  * @since 0.1
  */
-public final class Cookies {
+public final class CookiesAuthScheme implements AuthScheme {
 
     /**
-     * Headers.
+     * Auth scheme name.
      */
-    private final Iterable<Map.Entry<String, String>> headers;
+    private static final String SCHEME = "Cookie";
 
-    /**
-     * Ctor.
-     *
-     * @param headers Headers.
-     */
-    public Cookies(final Iterable<Map.Entry<String, String>> headers) {
-        this.headers = headers;
-    }
-
-    /**
-     * Extracts user from cookie headers.
-     *
-     * @return User if session cookie found.
-     */
-    public Optional<Authentication.User> user() {
-        return Optional.ofNullable(
-            Cookies.cookies(new RqHeaders(this.headers, "Cookie")).get("session")
-        ).flatMap(Cookies::session);
+    @Override
+    public CompletionStage<Result> authenticate(final Iterable<Map.Entry<String, String>> headers) {
+        return CompletableFuture.completedFuture(
+            CookiesAuthScheme.session(
+                Optional.ofNullable(
+                    CookiesAuthScheme.cookies(
+                        new RqHeaders(headers, CookiesAuthScheme.SCHEME)
+                    ).get("session")
+                )
+            )
+        );
     }
 
     /**
@@ -106,11 +102,10 @@ public final class Cookies {
      * @param encoded Encoded string
      * @return User id
      */
-    @SuppressWarnings("PMD.PreserveStackTrace")
-    private static Optional<Authentication.User> session(final String encoded) {
+    private static Result session(final Optional<String> encoded) {
         final String env = System.getenv("ARTIPIE_SESSION_KEY");
         final Optional<Authentication.User> user;
-        if (env == null) {
+        if (env == null || encoded.isEmpty()) {
             user = Optional.empty();
         } else {
             final byte[] key;
@@ -122,16 +117,29 @@ public final class Cookies {
                 user = Optional.of(
                     new Authentication.User(
                         new String(
-                            rsa.doFinal(Hex.decodeHex(encoded.toCharArray())),
+                            rsa.doFinal(Hex.decodeHex(encoded.get().toCharArray())),
                             StandardCharsets.UTF_8
                         )
                     )
                 );
             } catch (final IOException | DecoderException | GeneralSecurityException err) {
-                Logger.error(Cookies.class, "Failed to read session cookie: %[exception]s");
-                throw new IllegalStateException("Failed to read session cookie");
+                Logger.error(
+                    CookiesAuthScheme.class, "Failed to read session cookie: %[exception]s"
+                );
+                throw new IllegalStateException("Failed to read session cookie", err);
             }
         }
-        return user;
+        return new AuthScheme.Result() {
+
+            @Override
+            public Optional<Authentication.User> user() {
+                return user;
+            }
+
+            @Override
+            public String challenge() {
+                return CookiesAuthScheme.SCHEME;
+            }
+        };
     }
 }
