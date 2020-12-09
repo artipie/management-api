@@ -73,6 +73,11 @@ SOFTWARE.
       <artifactId>jcabi-log</artifactId>
     </dependency>
     <dependency>
+      <groupId>com.github.jknack</groupId>
+      <artifactId>handlebars</artifactId>
+      <version>4.2.0</version>
+    </dependency>
+    <dependency>
       <groupId>com.jcabi</groupId>
       <artifactId>jcabi-matchers</artifactId>
       <scope>test</scope>
