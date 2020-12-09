@@ -25,6 +25,7 @@ package com.artipie.management.api;
 
 import com.artipie.asto.Content;
 import com.artipie.http.Headers;
+import com.artipie.http.auth.AuthScheme;
 import com.artipie.http.auth.Authentication;
 import com.artipie.http.auth.Permissions;
 import com.artipie.http.headers.Authorization;
@@ -55,7 +56,7 @@ class ApiAuthSliceTest {
                 new Authentication.Single(user, pswd),
                 new Permissions.Single(user, "api"),
                 new SliceSimple(StandardRs.OK),
-                new Cookies.Fake(user)
+                new AuthScheme.Fake(user)
             ),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.OK),
@@ -75,7 +76,7 @@ class ApiAuthSliceTest {
                 new Authentication.Single(user, pswd),
                 new Permissions.Single("someone", "anything"),
                 new SliceSimple(StandardRs.OK),
-                new Cookies.Fake(user)
+                new AuthScheme.Fake(user)
             ),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.FORBIDDEN),
@@ -95,7 +96,7 @@ class ApiAuthSliceTest {
                 new Authentication.Single(user, pswd),
                 new Permissions.Single(user, "api"),
                 new SliceSimple(StandardRs.OK),
-                new Cookies.Fake()
+                new AuthScheme.Fake()
             ),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.OK),
@@ -115,7 +116,7 @@ class ApiAuthSliceTest {
                 new Authentication.Single(user, pswd),
                 new Permissions.Single("someone", "anything"),
                 new SliceSimple(StandardRs.OK),
-                new Cookies.Fake()
+                new AuthScheme.Fake()
             ),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.FORBIDDEN),
