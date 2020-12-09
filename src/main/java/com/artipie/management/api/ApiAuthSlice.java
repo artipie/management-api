@@ -73,7 +73,7 @@ public final class ApiAuthSlice implements Slice {
      * @param auth Authentication
      * @param perms Permissions
      * @param origin Origin slice
-     * @param scheme Cookies
+     * @param scheme Authentication scheme
      * @checkstyle ParameterNumberCheck (10 lines)
      */
     public ApiAuthSlice(
