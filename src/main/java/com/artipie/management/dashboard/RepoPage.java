@@ -50,7 +50,7 @@ import org.cactoos.map.MapOf;
  * @since 0.2
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-final class RepoPage implements Page {
+public final class RepoPage implements Page {
 
     /**
      * URI path pattern.
@@ -72,7 +72,7 @@ final class RepoPage implements Page {
      * @param tpl Template engine
      * @param storage Settings storage
      */
-    RepoPage(final TemplateLoader tpl, final Storage storage) {
+    public RepoPage(final TemplateLoader tpl, final Storage storage) {
         this.handlebars = new Handlebars(tpl);
         this.storage = storage;
     }
