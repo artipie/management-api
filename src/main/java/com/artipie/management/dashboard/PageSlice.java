@@ -38,7 +38,7 @@ import org.reactivestreams.Publisher;
  * Slice to render HTML pages.
  * @since 0.2
  */
-final class PageSlice implements Slice {
+public final class PageSlice implements Slice {
 
     /**
      * HTML page.
@@ -49,7 +49,7 @@ final class PageSlice implements Slice {
      * New slice for page.
      * @param page Page
      */
-    PageSlice(final Page page) {
+    public PageSlice(final Page page) {
         this.page = page;
     }
 
