@@ -42,7 +42,7 @@ import org.cactoos.map.MapOf;
  * @since 0.2
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-final class UserPage implements Page {
+public final class UserPage implements Page {
 
     /**
      * URI path pattern.
@@ -64,7 +64,7 @@ final class UserPage implements Page {
      * @param tpl Template loader
      * @param storage Settings storage
      */
-    UserPage(final TemplateLoader tpl, final Storage storage) {
+    public UserPage(final TemplateLoader tpl, final Storage storage) {
         this.handlebars = new Handlebars(tpl);
         this.storage = storage;
     }
