@@ -85,7 +85,17 @@ public final class FromRqLine {
         /**
          * Repo pattern.
          */
-        REPO("/api/security/permissions/(?<repo>[^/.]+)");
+        REPO("/api/security/permissions/(?<repo>[^/.]+)"),
+
+        /**
+         * Repos pattern.
+         */
+        REPOS("/api/security/permissions"),
+
+        /**
+         * Create repo pattern.
+         */
+        CREATE_REPO("/api/repositories/.*");
 
         /**
          * Pattern.

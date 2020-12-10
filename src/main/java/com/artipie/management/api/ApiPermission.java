@@ -26,8 +26,10 @@ package com.artipie.management.api;
 import com.artipie.http.auth.Authentication;
 import com.artipie.http.auth.Permission;
 import com.artipie.http.rq.RequestLineFrom;
+import com.artipie.management.api.artifactory.FromRqLine;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * Permissions for API and dashboard endpoints.
@@ -59,7 +61,10 @@ public final class ApiPermission implements Permission {
 
     @Override
     public boolean allowed(final Authentication.User user) {
-        final Matcher matcher = PTN_PATH.matcher(new RequestLineFrom(this.line).uri().getPath());
-        return matcher.matches() && user.name().equals(matcher.group("user"));
+        final String path = new RequestLineFrom(this.line).uri().getPath();
+        final Matcher matcher = PTN_PATH.matcher(path);
+        return matcher.matches() && user.name().equals(matcher.group("user"))
+            || Stream.of(FromRqLine.RqPattern.values()).map(FromRqLine.RqPattern::pattern)
+                .anyMatch(pattern -> pattern.matcher(path).matches());
     }
 }

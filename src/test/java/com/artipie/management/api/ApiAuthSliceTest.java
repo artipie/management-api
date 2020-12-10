@@ -38,6 +38,8 @@ import com.artipie.http.rs.StandardRs;
 import com.artipie.http.slice.SliceSimple;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Test for {@link ApiAuthSlice}.
@@ -101,6 +103,32 @@ class ApiAuthSliceTest {
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.OK),
                 new RequestLine(RqMethod.GET, String.format("/%s", user)),
+                new Headers.From(new Authorization.Basic(user, pswd)),
+                new Content.Empty()
+            )
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        strings = {
+            "/api/security/users/any", "/api/security/permissions/my_repo",
+            "/api/security/permissions", "/api/repositories/abc/123"
+        }
+    )
+    void passesByRqPatterns(final String rqline) {
+        final String user = "jane";
+        final String pswd = "000";
+        MatcherAssert.assertThat(
+            new ApiAuthSlice(
+                new Authentication.Single(user, pswd),
+                new Permissions.Single(user, "api"),
+                new SliceSimple(StandardRs.OK),
+                new AuthScheme.Fake()
+            ),
+            new SliceHasResponse(
+                new RsHasStatus(RsStatus.OK),
+                new RequestLine(RqMethod.GET, rqline),
                 new Headers.From(new Authorization.Basic(user, pswd)),
                 new Content.Empty()
             )
