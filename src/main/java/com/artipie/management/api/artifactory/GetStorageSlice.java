@@ -30,7 +30,7 @@ import com.artipie.http.Slice;
 import com.artipie.http.async.AsyncResponse;
 import com.artipie.http.rq.RequestLineFrom;
 import com.artipie.http.rs.common.RsJson;
-import com.artipie.management.RepoStorage;
+import com.artipie.management.Storages;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -50,7 +50,7 @@ public final class GetStorageSlice implements Slice {
     /**
      * Artipie settings storage.
      */
-    private final RepoStorage storage;
+    private final Storages storage;
 
     /**
      * Artipie path pattern.
@@ -62,7 +62,7 @@ public final class GetStorageSlice implements Slice {
      * @param storage Artipie settings storage
      * @param path Artipie path pattern
      */
-    public GetStorageSlice(final RepoStorage storage, final Pattern path) {
+    public GetStorageSlice(final Storages storage, final Pattern path) {
         this.storage = storage;
         this.path = path;
     }

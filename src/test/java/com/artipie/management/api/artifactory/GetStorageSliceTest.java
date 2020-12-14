@@ -34,7 +34,7 @@ import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.management.IsJson;
-import com.artipie.management.RepoStorage;
+import com.artipie.management.Storages;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
@@ -77,7 +77,7 @@ class GetStorageSliceTest {
     void shouldReturnExpectedData(final String layout, final String repo) {
         final Storage storage = this.example();
         MatcherAssert.assertThat(
-            new GetStorageSlice(new RepoStorage.Fake(storage), PATTERNS.get(layout)),
+            new GetStorageSlice(new Storages.Fake(storage), PATTERNS.get(layout)),
             new SliceHasResponse(
                 new AllOf<>(
                     Arrays.asList(

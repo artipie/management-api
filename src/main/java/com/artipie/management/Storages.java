@@ -31,7 +31,7 @@ import java.util.concurrent.CompletionStage;
  * Repository storage.
  * @since 0.3
  */
-public interface RepoStorage {
+public interface Storages {
 
     /**
      * Get storage by repo name.
@@ -42,10 +42,10 @@ public interface RepoStorage {
     CompletionStage<Storage> repoStorage(String name);
 
     /**
-     * Fake {@link RepoStorage} implementation.
+     * Fake {@link Storages} implementation.
      * @since 0.3
      */
-    final class Fake implements RepoStorage {
+    final class Fake implements Storages {
 
         /**
          * Repo storage.
