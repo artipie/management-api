@@ -48,9 +48,9 @@ import org.reactivestreams.Publisher;
 public final class GetStorageSlice implements Slice {
 
     /**
-     * Artipie settings storage.
+     * Artipie storages.
      */
-    private final Storages storage;
+    private final Storages storages;
 
     /**
      * Artipie path pattern.
@@ -59,11 +59,11 @@ public final class GetStorageSlice implements Slice {
 
     /**
      * New storage list slice.
-     * @param storage Artipie settings storage
+     * @param storages Artipie storages
      * @param path Artipie path pattern
      */
-    public GetStorageSlice(final Storages storage, final Pattern path) {
-        this.storage = storage;
+    public GetStorageSlice(final Storages storages, final Pattern path) {
+        this.storages = storages;
         this.path = path;
     }
 
@@ -73,7 +73,7 @@ public final class GetStorageSlice implements Slice {
         final Request request = new Request(this.path, line);
         final Key root = request.root();
         return new AsyncResponse(
-            this.storage.repoStorage(request.repo()).thenCompose(
+            this.storages.repoStorage(request.repo()).thenCompose(
                 repo -> repo.list(root).thenApply(
                     list -> {
                         final KeyList keys = new KeyList(root);

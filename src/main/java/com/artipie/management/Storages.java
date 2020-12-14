@@ -28,7 +28,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Repository storage.
+ * Starages.
  * @since 0.3
  */
 public interface Storages {
