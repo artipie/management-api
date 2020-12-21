@@ -33,6 +33,7 @@ import com.artipie.http.hm.SliceHasResponse;
 import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
+import com.artipie.management.FakeConfigFile;
 import com.artipie.management.FakeRepoPerms;
 import com.artipie.management.RepoPermissions;
 import java.nio.charset.StandardCharsets;
@@ -44,6 +45,8 @@ import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Test for {@link GetPermissionSlice}.
@@ -67,7 +70,7 @@ class GetPermissionSliceTest {
     @Test
     void returnsBadRequestOnInvalidRequest() {
         MatcherAssert.assertThat(
-            new GetPermissionSlice(this.storage, new FakeRepoPerms()),
+            new GetPermissionSlice(new FakeRepoPerms(), new FakeConfigFile(this.storage)),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.BAD_REQUEST),
                 new RequestLine(RqMethod.GET, "/some/api/permissions/maven")
@@ -78,7 +81,7 @@ class GetPermissionSliceTest {
     @Test
     void returnsNotFoundIfRepoDoesNotExists() {
         MatcherAssert.assertThat(
-            new GetPermissionSlice(this.storage, new FakeRepoPerms()),
+            new GetPermissionSlice(new FakeRepoPerms(), new FakeConfigFile(this.storage)),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.NOT_FOUND),
                 new RequestLine(RqMethod.GET, "/api/security/permissions/pypi")
@@ -86,12 +89,13 @@ class GetPermissionSliceTest {
         );
     }
 
-    @Test
-    void returnsEmptyUsersIfNoPermissionsSet() {
+    @ParameterizedTest
+    @ValueSource(strings = {".yaml", ".yml"})
+    void returnsEmptyUsersIfNoPermissionsSet(final String extension) {
         final String repo = "docker";
-        this.storage.save(new Key.From(String.format("%s.yaml", repo)), Content.EMPTY);
+        this.storage.save(new Key.From(String.format("%s%s", repo, extension)), Content.EMPTY);
         MatcherAssert.assertThat(
-            new GetPermissionSlice(this.storage, new FakeRepoPerms(repo)),
+            new GetPermissionSlice(new FakeRepoPerms(repo), new FakeConfigFile(this.storage)),
             new SliceHasResponse(
                 new RsHasBody(
                     this.response(
@@ -116,7 +120,6 @@ class GetPermissionSliceTest {
         this.storage.save(new Key.From(String.format("%s.yaml", repo)), Content.EMPTY);
         MatcherAssert.assertThat(
             new GetPermissionSlice(
-                this.storage,
                 new FakeRepoPerms(
                     repo,
                     List.of(
@@ -128,7 +131,8 @@ class GetPermissionSliceTest {
                         )
                     ),
                     Collections.singletonList(new RepoPermissions.PathPattern("**/*"))
-                )
+                ),
+                new FakeConfigFile(this.storage)
             ),
             new SliceHasResponse(
                 new RsHasBody(

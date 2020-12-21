@@ -30,13 +30,17 @@ import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.http.hm.RsHasStatus;
 import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rs.RsStatus;
+import com.artipie.management.FakeConfigFile;
 import io.reactivex.Flowable;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import javax.json.Json;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Test for {@link CreateRepoSlice}.
@@ -46,12 +50,21 @@ import org.junit.jupiter.api.Test;
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class CreateRepoSliceTest {
 
+    /**
+     * Storage.
+     */
+    private Storage storage;
+
+    @BeforeEach
+    void setUp() {
+        this.storage = new InMemoryStorage();
+    }
+
     @Test
     void returnsOkAndSavesYamlIfJsonIsValidWithUser() {
-        final Storage storage = new InMemoryStorage();
         MatcherAssert.assertThat(
             "Returns 200 OK",
-            new CreateRepoSlice(storage).response(
+            new CreateRepoSlice(this.storage, new FakeConfigFile(this.storage)).response(
                 new RequestLine("PUT", "/api/repositories/username/my_repo").toString(),
                 Collections.emptyList(),
                 this.jsonBody()
@@ -60,17 +73,16 @@ class CreateRepoSliceTest {
         );
         MatcherAssert.assertThat(
             "Saves yaml to storage",
-            storage.exists(new Key.From("username/my_repo.yaml")).join(),
+            this.storage.exists(new Key.From("username/my_repo.yaml")).join(),
             new IsEqual<>(true)
         );
     }
 
     @Test
     void returnsOkAndSavesYamlIfJsonIsValid() {
-        final Storage storage = new InMemoryStorage();
         MatcherAssert.assertThat(
             "Returns 200 OK",
-            new CreateRepoSlice(storage).response(
+            new CreateRepoSlice(this.storage, new FakeConfigFile(this.storage)).response(
                 new RequestLine("PUT", "/api/repositories/my_repo").toString(),
                 Collections.emptyList(),
                 this.jsonBody()
@@ -79,17 +91,20 @@ class CreateRepoSliceTest {
         );
         MatcherAssert.assertThat(
             "Saves yaml to storage",
-            storage.exists(new Key.From("my_repo.yaml")).join(),
+            this.storage.exists(new Key.From("my_repo.yaml")).join(),
             new IsEqual<>(true)
         );
     }
 
-    @Test
-    void returnsBadRequestIfRepoAlreadyExists() {
-        final Storage storage = new InMemoryStorage();
-        storage.save(new Key.From("my_repo.yaml"), new Content.From(new byte[]{}));
+    @ParameterizedTest
+    @ValueSource(strings = {".yaml", ".yml"})
+    void returnsBadRequestIfRepoYamlOrYmlAlreadyExists(final String extension) {
+        this.storage.save(
+            new Key.From(String.format("my_repo%s", extension)),
+            new Content.From(new byte[]{})
+        );
         MatcherAssert.assertThat(
-            new CreateRepoSlice(storage).response(
+            new CreateRepoSlice(this.storage, new FakeConfigFile(this.storage)).response(
                 new RequestLine("PUT", "/api/repositories/my_repo").toString(),
                 Collections.emptyList(),
                 this.jsonBody()
@@ -101,7 +116,7 @@ class CreateRepoSliceTest {
     @Test
     void returnsBadRequestIfJsonIsNotValid() {
         MatcherAssert.assertThat(
-            new CreateRepoSlice(new InMemoryStorage()).response(
+            new CreateRepoSlice(this.storage, new FakeConfigFile(this.storage)).response(
                 new RequestLine("PUT", "/api/repositories/my_repo").toString(),
                 Collections.emptyList(),
                 Flowable.fromArray(

@@ -34,6 +34,7 @@ import com.artipie.http.async.AsyncResponse;
 import com.artipie.http.rq.RequestLineFrom;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
+import com.artipie.management.ConfigFile;
 import com.artipie.management.api.ContentAsJson;
 import io.reactivex.Single;
 import java.nio.ByteBuffer;
@@ -67,11 +68,18 @@ public final class CreateRepoSlice implements Slice {
     private final Storage storage;
 
     /**
+     * Config file to support `yaml` and `.yml` extensions.
+     */
+    private final ConfigFile configfile;
+
+    /**
      * Ctor.
      * @param storage Artipie settings storage
+     * @param configfile Config file to support `yaml` and `.yml` extensions
      */
-    public CreateRepoSlice(final Storage storage) {
+    public CreateRepoSlice(final Storage storage, final ConfigFile configfile) {
         this.storage = storage;
+        this.configfile = configfile;
     }
 
     @Override
@@ -87,7 +95,7 @@ public final class CreateRepoSlice implements Slice {
                     valid(json).map(
                         name -> {
                             final Key key = CreateRepoSlice.yamlKey(line, name);
-                            return this.storage.exists(key)
+                            return this.configfile.exists(key)
                                 .thenCompose(
                                     exists -> {
                                         final CompletionStage<Response> res;
@@ -106,7 +114,7 @@ public final class CreateRepoSlice implements Slice {
                                         }
                                         return res;
                                     }
-                                );
+                                ).toCompletableFuture();
                         }
                     ).orElse(
                         CompletableFuture.completedFuture(new RsWithStatus(RsStatus.BAD_REQUEST))
