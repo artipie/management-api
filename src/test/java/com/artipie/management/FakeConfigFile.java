@@ -108,13 +108,13 @@ public final class FakeConfigFile implements ConfigFile {
 
     @Override
     public String name(final Key filename) {
-        return this.matcher("name", filename);
+        return FakeConfigFile.matcher("name", filename);
     }
 
     @Override
     public Optional<String> extension(final Key filename) {
         final Optional<String> extnsn;
-        final String val = matcher("extension", filename);
+        final String val = FakeConfigFile.matcher("extension", filename);
         if (val.isEmpty()) {
             extnsn = Optional.empty();
         } else {
