@@ -55,7 +55,7 @@ final class ApiRepoGetSliceTest {
         final String repo = "my-repo";
         storage.save(
             new Key.From(String.format("bob/%s%s", repo, extension)),
-            new Content.From(yaml().getBytes())
+            new Content.From(yaml())
         ).join();
         MatcherAssert.assertThat(
             new ApiRepoGetSlice(new FakeConfigFile(storage)),
@@ -63,7 +63,7 @@ final class ApiRepoGetSliceTest {
                 new AllOf<>(
                     Arrays.asList(
                         new RsHasStatus(RsStatus.OK),
-                        new RsHasBody(yaml().getBytes())
+                        new RsHasBody(yaml())
                     )
                 ),
                 new RequestLine(
@@ -73,10 +73,10 @@ final class ApiRepoGetSliceTest {
         );
     }
 
-    private static String yaml() {
+    private static byte[] yaml() {
         return Yaml.createYamlMappingBuilder().add(
             "repo", Yaml.createYamlMappingBuilder()
-                .add("type", "docke r")
+                .add("type", "docker")
                 .add("storage", "path")
                 .add(
                     "permissions", Yaml.createYamlMappingBuilder().add(
@@ -86,7 +86,7 @@ final class ApiRepoGetSliceTest {
                             .build()
                     ).build()
                 ).build()
-        ).build().toString();
+        ).build().toString().getBytes();
     }
 
 }
