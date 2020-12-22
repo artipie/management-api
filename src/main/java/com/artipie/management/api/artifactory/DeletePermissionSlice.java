@@ -24,7 +24,6 @@
 package com.artipie.management.api.artifactory;
 
 import com.artipie.asto.Key;
-import com.artipie.asto.Storage;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import com.artipie.http.async.AsyncResponse;
@@ -32,6 +31,7 @@ import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithBody;
 import com.artipie.http.rs.RsWithStatus;
 import com.artipie.http.rs.StandardRs;
+import com.artipie.management.ConfigFile;
 import com.artipie.management.RepoPermissions;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -49,23 +49,23 @@ import org.reactivestreams.Publisher;
 public final class DeletePermissionSlice implements Slice {
 
     /**
-     * Artipie settings storage.
-     */
-    private final Storage storage;
-
-    /**
      * Repository permissions.
      */
     private final RepoPermissions permissions;
 
     /**
-     * Ctor.
-     * @param storage Artipie settings storage
-     * @param permissions Artipie repository permissions
+     * Config file to support `yaml` and `.yml` extensions.
      */
-    public DeletePermissionSlice(final Storage storage, final RepoPermissions permissions) {
-        this.storage = storage;
+    private final ConfigFile configfile;
+
+    /**
+     * Ctor.
+     * @param permissions Artipie repository permissions
+     * @param configfile Config file to support `yaml` and `.yml` extensions
+     */
+    public DeletePermissionSlice(final RepoPermissions permissions, final ConfigFile configfile) {
         this.permissions = permissions;
+        this.configfile = configfile;
     }
 
     @Override
@@ -74,8 +74,7 @@ public final class DeletePermissionSlice implements Slice {
         final Optional<String> opt = new FromRqLine(line, FromRqLine.RqPattern.REPO).get();
         return opt.<Response>map(
             repo -> new AsyncResponse(
-                this.storage
-                    .exists(new Key.From(String.format("%s.yaml", repo)))
+                this.configfile.exists(new Key.From(repo))
                     .thenCompose(
                         exists -> {
                             final CompletionStage<Response> res;

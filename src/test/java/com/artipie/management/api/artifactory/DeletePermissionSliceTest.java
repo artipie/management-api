@@ -33,12 +33,16 @@ import com.artipie.http.hm.SliceHasResponse;
 import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
+import com.artipie.management.FakeConfigFile;
 import com.artipie.management.FakeRepoPerms;
 import java.nio.charset.StandardCharsets;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.hamcrest.collection.IsEmptyCollection;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Test for {@link DeletePermissionSlice}.
@@ -47,10 +51,20 @@ import org.junit.jupiter.api.Test;
  */
 class DeletePermissionSliceTest {
 
+    /**
+     * Storage.
+     */
+    private Storage storage;
+
+    @BeforeEach
+    void setUp() {
+        this.storage = new InMemoryStorage();
+    }
+
     @Test
     void returnsBadRequestOnInvalidRequest() {
         MatcherAssert.assertThat(
-            new DeletePermissionSlice(new InMemoryStorage(), new FakeRepoPerms()),
+            new DeletePermissionSlice(new FakeRepoPerms(), new FakeConfigFile(this.storage)),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.BAD_REQUEST),
                 new RequestLine(RqMethod.DELETE, "/some/api/permissions/pypi")
@@ -61,7 +75,7 @@ class DeletePermissionSliceTest {
     @Test
     void returnsNotFoundIfRepositoryDoesNotExists() {
         MatcherAssert.assertThat(
-            new DeletePermissionSlice(new InMemoryStorage(), new FakeRepoPerms()),
+            new DeletePermissionSlice(new FakeRepoPerms(), new FakeConfigFile(this.storage)),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.NOT_FOUND),
                 new RequestLine(RqMethod.DELETE, "/api/security/permissions/pypi")
@@ -69,16 +83,16 @@ class DeletePermissionSliceTest {
         );
     }
 
-    @Test
-    void deletesRepoPermissions() {
-        final Storage storage = new InMemoryStorage();
+    @ParameterizedTest
+    @ValueSource(strings = {".yaml", ".yml"})
+    void deletesRepoPermissions(final String extension) {
         final String repo = "docker";
-        final Key.From key = new Key.From(String.format("%s.yaml", repo));
-        storage.save(key, Content.EMPTY).join();
+        final Key.From key = new Key.From(String.format("%s%s", repo, extension));
+        this.storage.save(key, Content.EMPTY).join();
         final FakeRepoPerms permissions = new FakeRepoPerms(repo);
         MatcherAssert.assertThat(
             "Returns 200 OK",
-            new DeletePermissionSlice(storage, permissions),
+            new DeletePermissionSlice(permissions, new FakeConfigFile(this.storage)),
             new SliceHasResponse(
                 Matchers.allOf(
                     new RsHasStatus(RsStatus.OK),
