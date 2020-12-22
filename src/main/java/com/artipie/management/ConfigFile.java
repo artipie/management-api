@@ -26,6 +26,7 @@ package com.artipie.management;
 import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -50,6 +51,15 @@ public interface ConfigFile {
      * @return Content of the config file.
      */
     CompletionStage<Content> value(Key filename);
+
+    /**
+     * Saves the bytes to the specified key.
+     *
+     * @param key The key
+     * @param content Bytes to save
+     * @return Completion or error signal.
+     */
+    CompletableFuture<Void> save(Key key, Content content);
 
     /**
      * Filename.
