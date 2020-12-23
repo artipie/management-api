@@ -107,6 +107,11 @@ public final class FakeConfigFile implements ConfigFile {
     }
 
     @Override
+    public CompletableFuture<Void> save(final Key filename, final Content content) {
+        return this.storage.save(filename, content);
+    }
+
+    @Override
     public String name(final Key filename) {
         return FakeConfigFile.matcher("name", filename);
     }
