@@ -32,6 +32,7 @@ import com.artipie.http.Slice;
 import com.artipie.http.async.AsyncResponse;
 import com.artipie.http.rq.RequestLineFrom;
 import com.artipie.http.rs.common.RsJson;
+import com.artipie.management.ConfigFile;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -45,6 +46,7 @@ import org.reactivestreams.Publisher;
  * Repo list API.
  * @since 0.1
  */
+@SuppressWarnings("PMD.ClassDataAbstractionCouplingCheck")
 public final class ApiRepoListSlice implements Slice {
 
     /**
@@ -58,11 +60,18 @@ public final class ApiRepoListSlice implements Slice {
     private final Storage storage;
 
     /**
+     * Config file to support `yaml` and `.yml` extensions.
+     */
+    private final ConfigFile configfile;
+
+    /**
      * New repo list API.
      * @param storage Artipie settings storage
+     * @param configfile Config file to support `yaml` and `.yml` extensions
      */
-    public ApiRepoListSlice(final Storage storage) {
+    public ApiRepoListSlice(final Storage storage, final ConfigFile configfile) {
         this.storage = storage;
+        this.configfile = configfile;
     }
 
     @Override
@@ -83,7 +92,9 @@ public final class ApiRepoListSlice implements Slice {
                         .add("user", user);
                     final JsonArrayBuilder arr = Json.createArrayBuilder();
                     for (final Key key : repos) {
-                        arr.add(key.string().replace(".yaml", ""));
+                        if (this.configfile.isYamlOrYml(key)) {
+                            arr.add(this.configfile.name(key));
+                        }
                     }
                     json.add("repositories", arr);
                     return json;

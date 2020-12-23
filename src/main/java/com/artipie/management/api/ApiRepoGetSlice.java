@@ -27,21 +27,17 @@ import com.amihaiemil.eoyaml.Scalar;
 import com.amihaiemil.eoyaml.Yaml;
 import com.amihaiemil.eoyaml.YamlMapping;
 import com.amihaiemil.eoyaml.YamlMappingBuilder;
-import com.artipie.asto.Concatenation;
 import com.artipie.asto.Key;
-import com.artipie.asto.Remaining;
-import com.artipie.asto.Storage;
-import com.artipie.asto.rx.RxStorage;
-import com.artipie.asto.rx.RxStorageWrapper;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import com.artipie.http.async.AsyncResponse;
 import com.artipie.http.rq.RequestLineFrom;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
+import com.artipie.management.ConfigFile;
+import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Single;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -59,16 +55,16 @@ public final class ApiRepoGetSlice implements Slice {
     private static final Pattern PTN = Pattern.compile("/api/repos/(?<key>[^/.]+/[^/.]+)");
 
     /**
-     * Artipie settings storage.
+     * Config file to support `yaml` and `.yml` extensions.
      */
-    private final Storage storage;
+    private final ConfigFile configfile;
 
     /**
      * New repo API.
-     * @param storage Artipie settings storage
+     * @param configfile Config file to support `yaml` and `.yml` extensions
      */
-    public ApiRepoGetSlice(final Storage storage) {
-        this.storage = storage;
+    public ApiRepoGetSlice(final ConfigFile configfile) {
+        this.configfile = configfile;
     }
 
     @Override
@@ -81,18 +77,13 @@ public final class ApiRepoGetSlice implements Slice {
         }
         final String name = matcher.group("key");
         final Key.From key = new Key.From(String.format("%s.yaml", name));
-        final RxStorage rxstorage = new RxStorageWrapper(this.storage);
         // @checkstyle LineLengthCheck (50 lines)
         return new AsyncResponse(
-            new RxStorageWrapper(this.storage).exists(key).filter(exists -> exists)
+            SingleInterop.fromFuture(this.configfile.exists(key)).filter(exists -> exists)
                 .flatMapSingleElement(
-                    ignore -> rxstorage.value(key)
-                        .flatMap(pub -> new Concatenation(pub).single())
+                    ignore -> SingleInterop.fromFuture(this.configfile.value(key))
+                        .to(new ContentAsYaml())
                         .map(
-                            data -> Yaml.createYamlInput(
-                                new String(new Remaining(data).bytes(), StandardCharsets.UTF_8)
-                            ).readYamlMapping()
-                        ).map(
                             config -> {
                                 final YamlMapping repo = config.yamlMapping("repo");
                                 YamlMappingBuilder builder = Yaml.createYamlMappingBuilder();
