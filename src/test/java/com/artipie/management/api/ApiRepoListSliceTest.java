@@ -48,6 +48,7 @@ import org.junit.jupiter.api.Test;
  * @since 0.4
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 final class ApiRepoListSliceTest {
 
     /**
@@ -75,6 +76,23 @@ final class ApiRepoListSliceTest {
                     Arrays.asList(
                         new RsHasStatus(RsStatus.OK),
                         new RsHasBody(this.body(user, pypi, repo))
+                    )
+                ),
+                new RequestLine(RqMethod.GET, String.format("/api/repos/%s", user))
+            )
+        );
+    }
+
+    @Test
+    void returnsEmptyRepoListForUserWhenNoConfigs() {
+        final String user = "alice";
+        MatcherAssert.assertThat(
+            new ApiRepoListSlice(this.storage, new FakeConfigFile(this.storage)),
+            new SliceHasResponse(
+                new AllOf<>(
+                    Arrays.asList(
+                        new RsHasStatus(RsStatus.OK),
+                        new RsHasBody(this.body(user))
                     )
                 ),
                 new RequestLine(RqMethod.GET, String.format("/api/repos/%s", user))

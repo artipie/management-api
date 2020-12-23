@@ -38,6 +38,8 @@ import com.artipie.management.FakeConfigFile;
 import java.util.Arrays;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.AllOf;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -48,17 +50,26 @@ import org.junit.jupiter.params.provider.ValueSource;
  */
 final class ApiRepoGetSliceTest {
 
+    /**
+     * Storage.
+     */
+    private Storage storage;
+
+    @BeforeEach
+    void setUp() {
+        this.storage = new InMemoryStorage();
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {".yaml", ".yml"})
     void getRepoConfiguration(final String extension) {
-        final Storage storage = new InMemoryStorage();
         final String repo = "my-repo";
-        storage.save(
+        this.storage.save(
             new Key.From(String.format("bob/%s%s", repo, extension)),
             new Content.From(yaml())
         ).join();
         MatcherAssert.assertThat(
-            new ApiRepoGetSlice(new FakeConfigFile(storage)),
+            new ApiRepoGetSlice(new FakeConfigFile(this.storage)),
             new SliceHasResponse(
                 new AllOf<>(
                     Arrays.asList(
@@ -69,6 +80,17 @@ final class ApiRepoGetSliceTest {
                 new RequestLine(
                     RqMethod.GET, String.format("/api/repos/bob/%s", repo)
                 )
+            )
+        );
+    }
+
+    @Test
+    void returnsNotFoundWhenConfigIsAbsent() {
+        MatcherAssert.assertThat(
+            new ApiRepoGetSlice(new FakeConfigFile(this.storage)),
+            new SliceHasResponse(
+                new RsHasStatus(RsStatus.NOT_FOUND),
+                new RequestLine(RqMethod.GET, "/api/repos/bob/absent-repo")
             )
         );
     }
