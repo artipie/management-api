@@ -28,13 +28,13 @@ import com.amihaiemil.eoyaml.Yaml;
 import com.amihaiemil.eoyaml.YamlMapping;
 import com.amihaiemil.eoyaml.YamlMappingBuilder;
 import com.artipie.asto.Key;
-import com.artipie.asto.Storage;
-import com.artipie.asto.rx.RxStorageWrapper;
 import com.artipie.http.rq.RequestLineFrom;
+import com.artipie.management.ConfigFiles;
 import com.artipie.management.api.ContentAsYaml;
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.helper.ConditionalHelpers;
 import com.github.jknack.handlebars.io.TemplateLoader;
+import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Single;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -63,18 +63,18 @@ public final class RepoPage implements Page {
     private final Handlebars handlebars;
 
     /**
-     * Settings storage.
+     * Config file to support `yaml` and `.yml` extensions.
      */
-    private final Storage storage;
+    private final ConfigFiles configfile;
 
     /**
      * New page.
      * @param tpl Template engine
-     * @param storage Settings storage
+     * @param configfile Config file to support `yaml` and `.yml` extensions
      */
-    public RepoPage(final TemplateLoader tpl, final Storage storage) {
+    public RepoPage(final TemplateLoader tpl, final ConfigFiles configfile) {
         this.handlebars = new Handlebars(tpl);
-        this.storage = storage;
+        this.configfile = configfile;
     }
 
     @Override
@@ -87,58 +87,59 @@ public final class RepoPage implements Page {
         final String name = matcher.group("key");
         this.handlebars.registerHelper("eq", ConditionalHelpers.eq);
         final String[] parts = name.split("/");
-        final Key.From key = new Key.From(String.format("%s.yaml", name));
+        final Key key = new Key.From(String.format("%s.yaml", name));
         // @checkstyle LineLengthCheck (30 lines)
-        final RxStorageWrapper rxsto = new RxStorageWrapper(this.storage);
-        return rxsto.exists(key).filter(exists -> exists).flatMapSingleElement(
-            ignore -> rxsto.value(key).to(new ContentAsYaml()).map(
-                config -> {
-                    final YamlMapping repo = config.yamlMapping("repo");
-                    YamlMappingBuilder builder = Yaml.createYamlMappingBuilder();
-                    builder = builder.add("type", repo.value("type"));
-                    if (repo.value("storage") != null
-                        && Scalar.class.isAssignableFrom(repo.value("storage").getClass())) {
-                        builder = builder.add("storage", repo.value("storage"));
+        return SingleInterop.fromFuture(this.configfile.exists(key))
+            .filter(exists -> exists)
+            .flatMapSingleElement(
+                ignore -> SingleInterop.fromFuture(this.configfile.value(key)).to(new ContentAsYaml()).map(
+                    config -> {
+                        final YamlMapping repo = config.yamlMapping("repo");
+                        YamlMappingBuilder builder = Yaml.createYamlMappingBuilder();
+                        builder = builder.add("type", repo.value("type"));
+                        if (repo.value("storage") != null
+                            && Scalar.class.isAssignableFrom(repo.value("storage").getClass())) {
+                            builder = builder.add("storage", repo.value("storage"));
+                        }
+                        builder = builder.add("permissions", repo.value("permissions"));
+                        if (repo.value("settings") != null) {
+                            builder = builder.add("settings", repo.value("settings"));
+                        }
+                        return Yaml.createYamlMappingBuilder().add("repo", builder.build()).build();
                     }
-                    builder = builder.add("permissions", repo.value("permissions"));
-                    if (repo.value("settings") != null) {
-                        builder = builder.add("settings", repo.value("settings"));
-                    }
-                    return Yaml.createYamlMappingBuilder().add("repo", builder.build()).build();
-                }
-            ).map(
-                yaml -> this.handlebars.compile("repo").apply(
-                    new MapOf<>(
-                        new MapEntry<>("title", name),
-                        new MapEntry<>("user", parts[0]),
-                        new MapEntry<>("name", parts[1]),
-                        new MapEntry<>("config", yaml.toString()),
-                        new MapEntry<>("found", true),
-                        new MapEntry<>("type", yaml.yamlMapping("repo").value("type").asScalar().value())
-                    )
-                )
-            )
-        ).switchIfEmpty(
-            Single.fromCallable(
-                () -> this.handlebars.compile("repo").apply(
-                    new MapOf<>(
-                        new MapEntry<>("title", name),
-                        new MapEntry<>("user", parts[0]),
-                        new MapEntry<>("name", parts[1]),
-                        new MapEntry<>("found", false),
-                        new MapEntry<>(
-                            "type",
-                            URLEncodedUtils.parse(
-                                new RequestLineFrom(line).uri(),
-                                StandardCharsets.UTF_8
-                            ).stream()
-                                .filter(pair -> "type".equals(pair.getName()))
-                                .findFirst().map(NameValuePair::getValue)
-                                .orElse("maven")
+                ).map(
+                    yaml -> this.handlebars.compile("repo").apply(
+                        new MapOf<>(
+                            new MapEntry<>("title", name),
+                            new MapEntry<>("user", parts[0]),
+                            new MapEntry<>("name", parts[1]),
+                            new MapEntry<>("config", yaml.toString()),
+                            new MapEntry<>("found", true),
+                            new MapEntry<>("type", yaml.yamlMapping("repo").value("type").asScalar().value())
                         )
                     )
                 )
-            )
-        );
+            ).switchIfEmpty(
+                Single.fromCallable(
+                    () -> this.handlebars.compile("repo").apply(
+                        new MapOf<>(
+                            new MapEntry<>("title", name),
+                            new MapEntry<>("user", parts[0]),
+                            new MapEntry<>("name", parts[1]),
+                            new MapEntry<>("found", false),
+                            new MapEntry<>(
+                                "type",
+                                URLEncodedUtils.parse(
+                                    new RequestLineFrom(line).uri(),
+                                    StandardCharsets.UTF_8
+                                ).stream()
+                                    .filter(pair -> "type".equals(pair.getName()))
+                                    .findFirst().map(NameValuePair::getValue)
+                                    .orElse("maven")
+                            )
+                        )
+                    )
+                )
+            );
     }
 }

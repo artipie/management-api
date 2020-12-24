@@ -36,7 +36,7 @@ import java.util.concurrent.CompletionStage;
  * files `name.yaml` and `name.yml` are searched.
  * @since 0.4
  */
-public interface ConfigFile {
+public interface ConfigFiles {
 
     /**
      * Does specified config file exist in the storage?

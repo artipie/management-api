@@ -31,7 +31,7 @@ import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
 import com.artipie.http.rs.StandardRs;
 import com.artipie.http.rs.common.RsJson;
-import com.artipie.management.ConfigFile;
+import com.artipie.management.ConfigFiles;
 import com.artipie.management.RepoPermissions;
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -63,14 +63,14 @@ public final class GetPermissionSlice implements Slice {
     /**
      * Config file to support `yaml` and `.yml` extensions.
      */
-    private final ConfigFile configfile;
+    private final ConfigFiles configfile;
 
     /**
      * Ctor.
      * @param permissions Repository permissions
      * @param configfile Config file to support `yaml` and `.yml` extensions
      */
-    public GetPermissionSlice(final RepoPermissions permissions, final ConfigFile configfile) {
+    public GetPermissionSlice(final RepoPermissions permissions, final ConfigFiles configfile) {
         this.permissions = permissions;
         this.configfile = configfile;
     }

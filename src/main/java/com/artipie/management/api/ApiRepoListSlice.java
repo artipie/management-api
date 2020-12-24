@@ -32,7 +32,7 @@ import com.artipie.http.Slice;
 import com.artipie.http.async.AsyncResponse;
 import com.artipie.http.rq.RequestLineFrom;
 import com.artipie.http.rs.common.RsJson;
-import com.artipie.management.ConfigFile;
+import com.artipie.management.ConfigFiles;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -62,14 +62,14 @@ public final class ApiRepoListSlice implements Slice {
     /**
      * Config file to support `yaml` and `.yml` extensions.
      */
-    private final ConfigFile configfile;
+    private final ConfigFiles configfile;
 
     /**
      * New repo list API.
      * @param storage Artipie settings storage
      * @param configfile Config file to support `yaml` and `.yml` extensions
      */
-    public ApiRepoListSlice(final Storage storage, final ConfigFile configfile) {
+    public ApiRepoListSlice(final Storage storage, final ConfigFiles configfile) {
         this.storage = storage;
         this.configfile = configfile;
     }

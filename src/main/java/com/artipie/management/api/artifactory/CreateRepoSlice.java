@@ -34,7 +34,7 @@ import com.artipie.http.async.AsyncResponse;
 import com.artipie.http.rq.RequestLineFrom;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
-import com.artipie.management.ConfigFile;
+import com.artipie.management.ConfigFiles;
 import com.artipie.management.api.ContentAsJson;
 import io.reactivex.Single;
 import java.nio.ByteBuffer;
@@ -70,14 +70,14 @@ public final class CreateRepoSlice implements Slice {
     /**
      * Config file to support `yaml` and `.yml` extensions.
      */
-    private final ConfigFile configfile;
+    private final ConfigFiles configfile;
 
     /**
      * Ctor.
      * @param storage Artipie settings storage
      * @param configfile Config file to support `yaml` and `.yml` extensions
      */
-    public CreateRepoSlice(final Storage storage, final ConfigFile configfile) {
+    public CreateRepoSlice(final Storage storage, final ConfigFiles configfile) {
         this.storage = storage;
         this.configfile = configfile;
     }

@@ -39,7 +39,7 @@ import com.artipie.http.rq.RequestLineFrom;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithHeaders;
 import com.artipie.http.rs.RsWithStatus;
-import com.artipie.management.ConfigFile;
+import com.artipie.management.ConfigFiles;
 import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Single;
 import java.nio.ByteBuffer;
@@ -77,13 +77,13 @@ public final class ApiRepoUpdateSlice implements Slice {
     /**
      * Config file to support `yaml` and `.yml` extensions.
      */
-    private final ConfigFile configfile;
+    private final ConfigFiles configfile;
 
     /**
      * New patch API.
      * @param configfile Config file to support `yaml` and `.yml` extensions
      */
-    public ApiRepoUpdateSlice(final ConfigFile configfile) {
+    public ApiRepoUpdateSlice(final ConfigFiles configfile) {
         this.configfile = configfile;
     }
 
