@@ -66,7 +66,7 @@ public final class ApiRepoGetSlice implements Slice {
      * New repo API.
      * @param configfile Config file to support `yaml` and `.yml` extensions
      */
-    ApiRepoGetSlice(final ConfigFiles configfile) {
+    public ApiRepoGetSlice(final ConfigFiles configfile) {
         this.configfile = configfile;
     }
 
