@@ -27,6 +27,7 @@ import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.rx.RxStorageWrapper;
 import com.artipie.http.rq.RequestLineFrom;
+import com.artipie.management.ConfigFiles;
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.io.TemplateLoader;
 import io.reactivex.Single;
@@ -60,13 +61,20 @@ public final class UserPage implements Page {
     private final Storage storage;
 
     /**
+     * Config file to support `yaml` and `.yml` extensions.
+     */
+    private final ConfigFiles configfile;
+
+    /**
      * New page.
      * @param tpl Template loader
      * @param storage Settings storage
+     * @param configfile Config file to support `yaml` and `.yml` extensions
      */
-    public UserPage(final TemplateLoader tpl, final Storage storage) {
+    public UserPage(final TemplateLoader tpl, final Storage storage, final ConfigFiles configfile) {
         this.handlebars = new Handlebars(tpl);
         this.storage = storage;
+        this.configfile = configfile;
     }
 
     @Override
@@ -86,7 +94,7 @@ public final class UserPage implements Page {
                         new MapEntry<>(
                             "repos",
                             repos.stream()
-                                .map(key -> key.string().replace(".yaml", ""))
+                                .map(this.configfile::name)
                                 .collect(Collectors.toList())
                         )
                     )

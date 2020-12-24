@@ -33,11 +33,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Fake {@link ConfigFile} implementation.
+ * Fake {@link ConfigFiles} implementation.
  * @since 0.4
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-public final class FakeConfigFile implements ConfigFile {
+public final class FakeConfigFile implements ConfigFiles {
 
     /**
      * Pattern to divide `yaml` or `yml` filename into two groups: name and extension.
