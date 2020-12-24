@@ -27,7 +27,9 @@ import com.amihaiemil.eoyaml.Scalar;
 import com.amihaiemil.eoyaml.Yaml;
 import com.amihaiemil.eoyaml.YamlMapping;
 import com.amihaiemil.eoyaml.YamlMappingBuilder;
+import com.artipie.asto.Concatenation;
 import com.artipie.asto.Key;
+import com.artipie.asto.Remaining;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import com.artipie.http.async.AsyncResponse;
@@ -38,6 +40,7 @@ import com.artipie.management.ConfigFiles;
 import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Single;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -63,7 +66,7 @@ public final class ApiRepoGetSlice implements Slice {
      * New repo API.
      * @param configfile Config file to support `yaml` and `.yml` extensions
      */
-    public ApiRepoGetSlice(final ConfigFiles configfile) {
+    ApiRepoGetSlice(final ConfigFiles configfile) {
         this.configfile = configfile;
     }
 
@@ -82,8 +85,12 @@ public final class ApiRepoGetSlice implements Slice {
             SingleInterop.fromFuture(this.configfile.exists(key)).filter(exists -> exists)
                 .flatMapSingleElement(
                     ignore -> SingleInterop.fromFuture(this.configfile.value(key))
-                        .to(new ContentAsYaml())
+                        .flatMap(pub -> new Concatenation(pub).single())
                         .map(
+                            data -> Yaml.createYamlInput(
+                                new String(new Remaining(data).bytes(), StandardCharsets.UTF_8)
+                            ).readYamlMapping()
+                        ).map(
                             config -> {
                                 final YamlMapping repo = config.yamlMapping("repo");
                                 YamlMappingBuilder builder = Yaml.createYamlMappingBuilder();
