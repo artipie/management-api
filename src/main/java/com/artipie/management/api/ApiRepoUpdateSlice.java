@@ -30,20 +30,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.utils.URLEncodedUtils;
 import org.reactivestreams.Publisher;
 
 /**
  * Patch repo API.
  * @since 0.1
- * @todo #27:45min Enabled test for `ApiRepoUpdateSlice`.
- *  Now test for `ApiRepoUpdateSlice` is disabled because yaml string
- *  that passes with NameValuePair does not have enough spaces and
- *  does not have break lines at all. For example, instead of
- *  `repo:\n  type:docker\n  storage:path` the value `repo: type:docker storage:path`
- *  is got therefore NPE is occurred. So, it is necessary to fix this
- *  problem and enable test after that.
  * @checkstyle ExecutableStatementCountCheck (500 lines)
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle CyclomaticComplexityCheck (500 lines)
@@ -79,14 +70,9 @@ public final class ApiRepoUpdateSlice implements Slice {
         final String user = matcher.group("user");
         // @checkstyle LineLengthCheck (500 lines)
         return new AsyncResponse(
-            Single.just(body).to(ContentAs.STRING).map(
-                payload -> URLEncodedUtils.parse(payload, StandardCharsets.UTF_8)
-            ).flatMap(
+            Single.just(body).to(ContentAs.STRING).flatMap(
                 form -> {
-                    final String name = form.stream()
-                        .filter(input -> input.getName().equals("repo"))
-                        .map(NameValuePair::getValue)
-                        .findFirst().orElseThrow();
+                    final String name = ApiRepoUpdateSlice.value(form, "repo");
                     final Key key = new Key.From(
                         user,
                         String.format(
@@ -95,9 +81,7 @@ public final class ApiRepoUpdateSlice implements Slice {
                         )
                     );
                     final YamlMapping config = Yaml.createYamlInput(
-                        form.stream().filter(input -> input.getName().equals("config"))
-                            .map(NameValuePair::getValue)
-                            .findFirst().orElseThrow()
+                        ApiRepoUpdateSlice.value(form, "config")
                     ).readYamlMapping();
                     return SingleInterop.fromFuture(
                         this.configfile.exists(key).thenCompose(
@@ -163,5 +147,21 @@ public final class ApiRepoUpdateSlice implements Slice {
                 }
             )
         );
+    }
+
+    /**
+     * Obtain value from payload.
+     * @param payload Payload to parse
+     * @param name Parameter name to obtain
+     * @return Parameter value
+     * @checkstyle StringLiteralsConcatenationCheck (10 lines)
+     */
+    private static String value(final String payload, final String name) {
+        final int start = payload.indexOf(String.format("%s=", name)) + name.length() + 1;
+        int end = payload.indexOf(';', start);
+        if (end == -1) {
+            end = payload.length();
+        }
+        return payload.substring(start, end);
     }
 }
