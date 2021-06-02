@@ -134,7 +134,10 @@ final class ApiRepoUpdateSliceTest {
         return Yaml.createYamlMappingBuilder().add(
             "repo", Yaml.createYamlMappingBuilder()
                 .add("type", type)
-                .add("storage", "path")
+                .add(
+                    "storage",
+                    Yaml.createYamlMappingBuilder().add("type", "fs").add("path", "my/path").build()
+                )
                 .add(
                     "permissions", Yaml.createYamlMappingBuilder().add(
                         "john", Yaml.createYamlSequenceBuilder()
