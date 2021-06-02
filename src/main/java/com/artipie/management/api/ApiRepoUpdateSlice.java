@@ -11,7 +11,7 @@ import com.amihaiemil.eoyaml.YamlMappingBuilder;
 import com.amihaiemil.eoyaml.YamlNode;
 import com.artipie.asto.Content;
 import com.artipie.asto.Key;
-import com.artipie.asto.ext.ContentAs;
+import com.artipie.asto.ext.PublisherAs;
 import com.artipie.http.Headers;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
@@ -22,7 +22,6 @@ import com.artipie.http.rs.RsWithHeaders;
 import com.artipie.http.rs.RsWithStatus;
 import com.artipie.management.ConfigFiles;
 import hu.akarnokd.rxjava2.interop.SingleInterop;
-import io.reactivex.Single;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -30,6 +29,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.cactoos.scalar.Unchecked;
 import org.reactivestreams.Publisher;
 
 /**
@@ -70,7 +70,7 @@ public final class ApiRepoUpdateSlice implements Slice {
         final String user = matcher.group("user");
         // @checkstyle LineLengthCheck (500 lines)
         return new AsyncResponse(
-            Single.just(body).to(ContentAs.STRING).flatMap(
+            new PublisherAs(body).asciiString().thenCompose(
                 form -> {
                     final String name = ApiRepoUpdateSlice.value(form, "repo");
                     final Key key = new Key.From(
@@ -80,70 +80,69 @@ public final class ApiRepoUpdateSlice implements Slice {
                             name
                         )
                     );
-                    final YamlMapping config = Yaml.createYamlInput(
-                        ApiRepoUpdateSlice.value(form, "config")
-                    ).readYamlMapping();
-                    return SingleInterop.fromFuture(
-                        this.configfile.exists(key).thenCompose(
-                            exist -> {
-                                final CompletionStage<YamlMapping> res;
-                                if (exist) {
-                                    res = SingleInterop.fromFuture(this.configfile.value(key)).to(new ContentAsYaml()).map(
-                                        source -> {
-                                            final YamlMapping patch = config.yamlMapping("repo");
-                                            YamlMappingBuilder repo = Yaml.createYamlMappingBuilder();
-                                            repo = repo.add("type", source.yamlMapping("repo").value("type"));
-                                            if (patch.value("type") != null) {
-                                                repo = repo.add("type", patch.value("type"));
-                                            }
-                                            repo = repo.add("storage", source.yamlMapping("repo").value("storage"));
-                                            if (patch.value("storage") != null && Scalar.class.isAssignableFrom(patch.value("storage").getClass())) {
-                                                repo = repo.add("storage", patch.value("storage"));
-                                            }
-                                            repo = repo.add("permissions", source.yamlMapping("repo").value("permissions"));
-                                            if (patch.value("permissions") != null) {
-                                                repo = repo.add("permissions", patch.value("permissions"));
-                                            }
-                                            repo = repo.add("settings", source.yamlMapping("repo").value("settings"));
-                                            if (patch.value("permissions") != null) {
-                                                repo = repo.add("settings", patch.value("settings"));
-                                            }
-                                            return Yaml.createYamlMappingBuilder()
-                                                .add("repo", repo.build())
-                                                .build();
+                    final YamlMapping config = new Unchecked<>(
+                        () -> Yaml.createYamlInput(ApiRepoUpdateSlice.value(form, "config"))
+                            .readYamlMapping()
+                    ).value();
+                    return this.configfile.exists(key).thenCompose(
+                        exist -> {
+                            final CompletionStage<YamlMapping> res;
+                            if (exist) {
+                                res = SingleInterop.fromFuture(this.configfile.value(key)).to(new ContentAsYaml()).map(
+                                    source -> {
+                                        final YamlMapping patch = config.yamlMapping("repo");
+                                        YamlMappingBuilder repo = Yaml.createYamlMappingBuilder();
+                                        repo = repo.add("type", source.yamlMapping("repo").value("type"));
+                                        if (patch.value("type") != null) {
+                                            repo = repo.add("type", patch.value("type"));
                                         }
-                                    ).to(SingleInterop.get());
-                                } else {
-                                    final YamlMapping repo = config.yamlMapping("repo");
-                                    final YamlNode type = repo.value("type");
-                                    if (type == null || !Scalar.class.isAssignableFrom(type.getClass())) {
-                                        throw new IllegalStateException("Repository type required");
+                                        repo = repo.add("storage", source.yamlMapping("repo").value("storage"));
+                                        if (patch.value("storage") != null && Scalar.class.isAssignableFrom(patch.value("storage").getClass())) {
+                                            repo = repo.add("storage", patch.value("storage"));
+                                        }
+                                        repo = repo.add("permissions", source.yamlMapping("repo").value("permissions"));
+                                        if (patch.value("permissions") != null) {
+                                            repo = repo.add("permissions", patch.value("permissions"));
+                                        }
+                                        repo = repo.add("settings", source.yamlMapping("repo").value("settings"));
+                                        if (patch.value("permissions") != null) {
+                                            repo = repo.add("settings", patch.value("settings"));
+                                        }
+                                        return Yaml.createYamlMappingBuilder()
+                                            .add("repo", repo.build())
+                                            .build();
                                     }
-                                    final YamlNode stor = repo.value("storage");
-                                    if (stor == null || !Scalar.class.isAssignableFrom(stor.getClass())) {
-                                        throw new IllegalStateException("Repository storage is required");
-                                    }
-                                    res = CompletableFuture.completedFuture(
-                                        Yaml.createYamlMappingBuilder().add(
-                                            "repo",
-                                            Yaml.createYamlMappingBuilder()
-                                                .add("type", type)
-                                                .add("storage", stor)
-                                                .add("permissions", repo.value("permissions"))
-                                                .build()
-                                        ).build()
-                                    );
+                                ).to(SingleInterop.get());
+                            } else {
+                                final YamlMapping repo = config.yamlMapping("repo");
+                                final YamlNode type = repo.value("type");
+                                if (type == null || !Scalar.class.isAssignableFrom(type.getClass())) {
+                                    throw new IllegalStateException("Repository type required");
                                 }
-                                return res;
+                                final YamlMapping stor = repo.yamlMapping("storage");
+                                if (stor == null) {
+                                    throw new IllegalStateException("Repository storage is required");
+                                }
+                                res = CompletableFuture.completedFuture(
+                                    Yaml.createYamlMappingBuilder().add(
+                                        "repo",
+                                        Yaml.createYamlMappingBuilder()
+                                            .add("type", type)
+                                            .add("storage", stor)
+                                            .add("permissions", repo.value("permissions"))
+                                            .build()
+                                    ).build()
+                                );
                             }
+                            return res;
+                        }
                         ).thenCompose(yaml -> this.configfile.save(key, new Content.From(yaml.toString().getBytes(StandardCharsets.UTF_8))))
                         .thenApply(
                             ignore -> new RsWithHeaders(
                                 new RsWithStatus(RsStatus.FOUND),
                                 new Headers.From("Location", String.format("/dashboard/%s/%s", user, name))
                             )
-                        )
-                    );
+                        );
                 }
             )
         );
