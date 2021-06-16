@@ -119,18 +119,22 @@ public final class ApiRepoUpdateSlice implements Slice {
                                 if (type == null || !Scalar.class.isAssignableFrom(type.getClass())) {
                                     throw new IllegalStateException("Repository type required");
                                 }
-                                final YamlMapping stor = repo.yamlMapping("storage");
-                                if (stor == null) {
+                                final YamlMapping ystor = repo.yamlMapping("storage");
+                                final String sstor = repo.string("storage");
+                                if (ystor == null && sstor == null) {
                                     throw new IllegalStateException("Repository storage is required");
+                                }
+                                YamlMappingBuilder yrepo = Yaml.createYamlMappingBuilder()
+                                    .add("type", type)
+                                    .add("permissions", repo.value("permissions"));
+                                if (ystor == null) {
+                                    yrepo = yrepo.add("storage", sstor);
+                                } else {
+                                    yrepo = yrepo.add("storage", ystor);
                                 }
                                 res = CompletableFuture.completedFuture(
                                     Yaml.createYamlMappingBuilder().add(
-                                        "repo",
-                                        Yaml.createYamlMappingBuilder()
-                                            .add("type", type)
-                                            .add("storage", stor)
-                                            .add("permissions", repo.value("permissions"))
-                                            .build()
+                                        "repo", yrepo.build()
                                     ).build()
                                 );
                             }
@@ -157,7 +161,7 @@ public final class ApiRepoUpdateSlice implements Slice {
      */
     private static String value(final String payload, final String name) {
         final int start = payload.indexOf(String.format("%s=", name)) + name.length() + 1;
-        int end = payload.indexOf(';', start);
+        int end = payload.indexOf('&', start);
         if (end == -1) {
             end = payload.length();
         }
