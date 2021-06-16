@@ -5,6 +5,7 @@
 package com.artipie.management.api;
 
 import com.amihaiemil.eoyaml.Yaml;
+import com.amihaiemil.eoyaml.YamlMappingBuilder;
 import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
@@ -21,8 +22,8 @@ import java.io.IOException;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
@@ -53,8 +54,9 @@ final class ApiRepoUpdateSliceTest {
         this.storage = new InMemoryStorage();
     }
 
-    @Test
-    void createsRepoConfiguration() throws IOException {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void createsRepoConfiguration(final boolean defstor) {
         MatcherAssert.assertThat(
             "Returns FOUND",
             new ApiRepoUpdateSlice(new FakeConfigFile(this.storage)),
@@ -68,7 +70,7 @@ final class ApiRepoUpdateSliceTest {
                         "/dashboard/%s", ApiRepoUpdateSliceTest.userRepo()
                     )
                 ),
-                new Content.From(body(ApiRepoUpdateSliceTest.REPO, "maven"))
+                new Content.From(body(ApiRepoUpdateSliceTest.REPO, "maven", defstor))
             )
         );
         MatcherAssert.assertThat(
@@ -81,13 +83,19 @@ final class ApiRepoUpdateSliceTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {".yaml", ".yml"})
-    void updatesRepoConfiguration(final String extension) throws IOException {
+    @CsvSource({
+        ".yaml,true",
+        ".yaml,false",
+        ".yml,true",
+        ".yml,false"
+    })
+    void updatesRepoConfiguration(final String extension, final boolean defstor)
+        throws IOException {
         final String oldtype = "pypi";
         final String type = "docker";
         this.storage.save(
             new Key.From(String.format("%s%s", ApiRepoUpdateSliceTest.userRepo(), extension)),
-            new Content.From(yaml(oldtype).getBytes())
+            new Content.From(yaml(oldtype, defstor).getBytes())
         ).join();
         MatcherAssert.assertThat(
             "Returns FOUND",
@@ -103,7 +111,7 @@ final class ApiRepoUpdateSliceTest {
                         "/dashboard/%s", ApiRepoUpdateSliceTest.userRepo()
                 )
                 ),
-                new Content.From(body(ApiRepoUpdateSliceTest.REPO, type))
+                new Content.From(body(ApiRepoUpdateSliceTest.REPO, type, defstor))
             )
         );
         MatcherAssert.assertThat(
@@ -122,31 +130,34 @@ final class ApiRepoUpdateSliceTest {
         );
     }
 
-    private static byte[] body(final String reponame, final String type) {
-        return String.format("repo=%s;config=%s", reponame, yaml(type)).getBytes();
+    private static byte[] body(final String reponame, final String type, final boolean defstor) {
+        return String.format("repo=%s&config=%s", reponame, yaml(type, defstor)).getBytes();
     }
 
     private static String userRepo() {
         return String.format("%s/%s", ApiRepoUpdateSliceTest.USER, ApiRepoUpdateSliceTest.REPO);
     }
 
-    private static String yaml(final String type) {
-        return Yaml.createYamlMappingBuilder().add(
-            "repo", Yaml.createYamlMappingBuilder()
-                .add("type", type)
-                .add(
-                    "storage",
-                    Yaml.createYamlMappingBuilder().add("type", "fs").add("path", "my/path").build()
-                )
-                .add(
-                    "permissions", Yaml.createYamlMappingBuilder().add(
-                        "john", Yaml.createYamlSequenceBuilder()
-                            .add("read")
-                            .add("write")
-                            .build()
-                    ).build()
+    private static String yaml(final String type, final boolean defstor) {
+        YamlMappingBuilder repo = Yaml.createYamlMappingBuilder()
+            .add("type", type)
+            .add(
+                "permissions", Yaml.createYamlMappingBuilder().add(
+                    "john", Yaml.createYamlSequenceBuilder()
+                        .add("read")
+                        .add("write")
+                        .build()
                 ).build()
-        ).build().toString();
+            );
+        if (defstor) {
+            repo = repo.add("storage", "default");
+        } else {
+            repo = repo.add(
+                "storage",
+                Yaml.createYamlMappingBuilder().add("type", "fs").add("path", "my/path").build()
+            );
+        }
+        return Yaml.createYamlMappingBuilder().add("repo", repo.build()).build().toString();
     }
 
 }
