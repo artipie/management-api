@@ -153,7 +153,8 @@ public final class ApiRepoUpdateSlice implements Slice {
     }
 
     /**
-     * Obtain value from payload.
+     * Obtain value from payload, payload is a query string (not url-encoded):
+     * <code>name1=value1&name2=value2</code>.
      * @param payload Payload to parse
      * @param name Parameter name to obtain
      * @return Parameter value
