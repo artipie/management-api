@@ -25,7 +25,6 @@ import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.cactoos.scalar.Unchecked;
@@ -72,59 +71,47 @@ public final class ApiRepoUpdateSlice implements Slice {
             new PublisherAs(body).asciiString()
                 .thenApply(form -> URLDecoder.decode(form, StandardCharsets.US_ASCII)).thenCompose(
                     form -> {
-                        final String name = ApiRepoUpdateSlice.value(form, "repo");
-                        final Key key = new Key.From(
-                            user,
-                            String.format(
-                                "%s.yaml",
-                                name
-                            )
-                        );
                         final YamlMapping config = new Unchecked<>(
                             () -> Yaml.createYamlInput(ApiRepoUpdateSlice.value(form, "config"))
                                 .readYamlMapping()
                         ).value();
-                        return this.configfile.exists(key).thenCompose(
-                            exist -> {
-                                final YamlMapping repo = config.yamlMapping("repo");
-                                final YamlNode type = repo.value("type");
-                                if (type == null || !Scalar.class.isAssignableFrom(type.getClass())) {
-                                    throw new IllegalStateException("Repository type required");
-                                }
-                                final YamlMapping ystor = repo.yamlMapping("storage");
-                                final String sstor = repo.string("storage");
-                                if (ystor == null && sstor == null) {
-                                    throw new IllegalStateException("Repository storage is required");
-                                }
-                                YamlMappingBuilder yrepo = Yaml.createYamlMappingBuilder()
-                                    .add("type", type);
-                                if (ystor == null) {
-                                    yrepo = yrepo.add("storage", sstor);
-                                } else {
-                                    yrepo = yrepo.add("storage", ystor);
-                                }
-                                if (repo.value("permissions") != null) {
-                                    yrepo = yrepo.add("permissions", repo.value("permissions"));
-                                }
-                                if (repo.value("settings") != null) {
-                                    yrepo = yrepo.add("settings", repo.value("settings"));
-                                }
-                                return CompletableFuture.completedFuture(
-                                    Yaml.createYamlMappingBuilder().add(
-                                        "repo", yrepo.build()
-                                    ).build()
-                                );
-                            }
-                        ).thenCompose(yaml -> this.configfile.save(key, new Content.From(yaml.toString().getBytes(StandardCharsets.UTF_8))))
-                        .thenApply(
+                        final YamlMapping repo = config.yamlMapping("repo");
+                        final YamlNode type = repo.value("type");
+                        if (type == null || !Scalar.class.isAssignableFrom(type.getClass())) {
+                            throw new IllegalStateException("Repository type required");
+                        }
+                        final YamlMapping ystor = repo.yamlMapping("storage");
+                        final String sstor = repo.string("storage");
+                        if (ystor == null && sstor == null) {
+                            throw new IllegalStateException("Repository storage is required");
+                        }
+                        YamlMappingBuilder yrepo = Yaml.createYamlMappingBuilder().add("type", type);
+                        if (ystor == null) {
+                            yrepo = yrepo.add("storage", sstor);
+                        } else {
+                            yrepo = yrepo.add("storage", ystor);
+                        }
+                        if (repo.value("permissions") != null) {
+                            yrepo = yrepo.add("permissions", repo.value("permissions"));
+                        }
+                        if (repo.value("settings") != null) {
+                            yrepo = yrepo.add("settings", repo.value("settings"));
+                        }
+                        final String name = ApiRepoUpdateSlice.value(form, "repo");
+                        return this.configfile.save(
+                            new Key.From(user, String.format("%s.yaml", name)),
+                            new Content.From(
+                                Yaml.createYamlMappingBuilder().add("repo", yrepo.build())
+                                    .build().toString().getBytes(StandardCharsets.UTF_8)
+                            )
+                        ).thenApply(
                             ignore -> new RsWithHeaders(
                                 new RsWithStatus(RsStatus.FOUND),
                                 new Headers.From("Location", String.format("/dashboard/%s/%s", user, name))
                             )
                         );
-                    }
-            )
-        );
+                    })
+            );
     }
 
     /**
