@@ -19,6 +19,8 @@ import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.management.FakeConfigFile;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.BeforeEach;
@@ -131,7 +133,10 @@ final class ApiRepoUpdateSliceTest {
     }
 
     private static byte[] body(final String reponame, final String type, final boolean defstor) {
-        return String.format("repo=%s&config=%s", reponame, yaml(type, defstor)).getBytes();
+        return URLEncoder.encode(
+            String.format("repo=%s&config=%s", reponame, yaml(type, defstor)),
+            StandardCharsets.US_ASCII
+        ).getBytes();
     }
 
     private static String userRepo() {
