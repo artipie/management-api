@@ -9,8 +9,8 @@ import com.amihaiemil.eoyaml.YamlMappingBuilder;
 import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
-import com.artipie.asto.ext.PublisherAs;
 import com.artipie.asto.memory.InMemoryStorage;
+import com.artipie.asto.test.ContentIs;
 import com.artipie.http.Headers;
 import com.artipie.http.hm.RsHasStatus;
 import com.artipie.http.hm.SliceHasResponse;
@@ -18,11 +18,9 @@ import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.management.FakeConfigFile;
-import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import org.hamcrest.MatcherAssert;
-import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -58,7 +56,8 @@ final class ApiRepoUpdateSliceTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void createsRepoConfiguration(final boolean defstor) {
+    void createsRepoConfiguration(final boolean param) {
+        final String yaml = yaml("maven", param);
         MatcherAssert.assertThat(
             "Returns FOUND",
             new ApiRepoUpdateSlice(new FakeConfigFile(this.storage)),
@@ -72,15 +71,15 @@ final class ApiRepoUpdateSliceTest {
                         "/dashboard/%s", ApiRepoUpdateSliceTest.userRepo()
                     )
                 ),
-                new Content.From(body(ApiRepoUpdateSliceTest.REPO, "maven", defstor))
+                new Content.From(body(ApiRepoUpdateSliceTest.REPO, yaml))
             )
         );
         MatcherAssert.assertThat(
-            "Config file exist",
-            this.storage.exists(
+            "Config is not correct",
+            this.storage.value(
                 new Key.From(String.format("%s.yaml", ApiRepoUpdateSliceTest.userRepo()))
             ).join(),
-            new IsEqual<>(true)
+            new ContentIs(yaml, StandardCharsets.UTF_8)
         );
     }
 
@@ -91,13 +90,13 @@ final class ApiRepoUpdateSliceTest {
         ".yml,true",
         ".yml,false"
     })
-    void updatesRepoConfiguration(final String extension, final boolean defstor)
-        throws IOException {
+    void updatesRepoConfiguration(final String extension, final boolean param) {
         final String oldtype = "pypi";
         final String type = "docker";
+        final String yaml = yaml(type, param);
         this.storage.save(
             new Key.From(String.format("%s%s", ApiRepoUpdateSliceTest.userRepo(), extension)),
-            new Content.From(yaml(oldtype, defstor).getBytes())
+            new Content.From(yaml(oldtype, param).getBytes())
         ).join();
         MatcherAssert.assertThat(
             "Returns FOUND",
@@ -113,28 +112,21 @@ final class ApiRepoUpdateSliceTest {
                         "/dashboard/%s", ApiRepoUpdateSliceTest.userRepo()
                 )
                 ),
-                new Content.From(body(ApiRepoUpdateSliceTest.REPO, type, defstor))
+                new Content.From(body(ApiRepoUpdateSliceTest.REPO, yaml))
             )
         );
         MatcherAssert.assertThat(
             "Config file is updated",
-            Yaml.createYamlInput(
-                new PublisherAs(
-                    this.storage.value(
-                        new Key.From(String.format("%s.yaml", ApiRepoUpdateSliceTest.userRepo()))
-                    ).join()
-                ).asciiString()
-                .toCompletableFuture().join()
-            ).readYamlMapping()
-            .yamlMapping("repo")
-            .string("type"),
-            new IsEqual<>(type)
+            this.storage.value(
+                new Key.From(String.format("%s.yaml", ApiRepoUpdateSliceTest.userRepo()))
+            ).join(),
+            new ContentIs(yaml, StandardCharsets.UTF_8)
         );
     }
 
-    private static byte[] body(final String reponame, final String type, final boolean defstor) {
+    private static byte[] body(final String reponame, final String yaml) {
         return URLEncoder.encode(
-            String.format("repo=%s&config=%s", reponame, yaml(type, defstor)),
+            String.format("repo=%s&config=%s", reponame, yaml),
             StandardCharsets.US_ASCII
         ).getBytes();
     }
@@ -143,10 +135,15 @@ final class ApiRepoUpdateSliceTest {
         return String.format("%s/%s", ApiRepoUpdateSliceTest.USER, ApiRepoUpdateSliceTest.REPO);
     }
 
-    private static String yaml(final String type, final boolean defstor) {
+    private static String yaml(final String type, final boolean full) {
         YamlMappingBuilder repo = Yaml.createYamlMappingBuilder()
-            .add("type", type)
-            .add(
+            .add("type", type);
+        if (full) {
+            repo = repo.add(
+                "storage",
+                Yaml.createYamlMappingBuilder().add("type", "fs").add("path", "my/path").build()
+            );
+            repo = repo.add(
                 "permissions", Yaml.createYamlMappingBuilder().add(
                     "john", Yaml.createYamlSequenceBuilder()
                         .add("read")
@@ -154,13 +151,9 @@ final class ApiRepoUpdateSliceTest {
                         .build()
                 ).build()
             );
-        if (defstor) {
+            repo = repo.add("settings", "abc123");
+        } else  {
             repo = repo.add("storage", "default");
-        } else {
-            repo = repo.add(
-                "storage",
-                Yaml.createYamlMappingBuilder().add("type", "fs").add("path", "my/path").build()
-            );
         }
         return Yaml.createYamlMappingBuilder().add("repo", repo.build()).build().toString();
     }
