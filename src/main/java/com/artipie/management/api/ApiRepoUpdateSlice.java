@@ -21,12 +21,10 @@ import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithHeaders;
 import com.artipie.http.rs.RsWithStatus;
 import com.artipie.management.ConfigFiles;
-import hu.akarnokd.rxjava2.interop.SingleInterop;
+import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.cactoos.scalar.Unchecked;
@@ -70,86 +68,55 @@ public final class ApiRepoUpdateSlice implements Slice {
         final String user = matcher.group("user");
         // @checkstyle LineLengthCheck (500 lines)
         return new AsyncResponse(
-            new PublisherAs(body).asciiString().thenCompose(
-                form -> {
-                    final String name = ApiRepoUpdateSlice.value(form, "repo");
-                    final Key key = new Key.From(
-                        user,
-                        String.format(
-                            "%s.yaml",
-                            name
-                        )
-                    );
-                    final YamlMapping config = new Unchecked<>(
-                        () -> Yaml.createYamlInput(ApiRepoUpdateSlice.value(form, "config"))
-                            .readYamlMapping()
-                    ).value();
-                    return this.configfile.exists(key).thenCompose(
-                        exist -> {
-                            final CompletionStage<YamlMapping> res;
-                            if (exist) {
-                                res = SingleInterop.fromFuture(this.configfile.value(key)).to(new ContentAsYaml()).map(
-                                    source -> {
-                                        final YamlMapping patch = config.yamlMapping("repo");
-                                        YamlMappingBuilder repo = Yaml.createYamlMappingBuilder();
-                                        repo = repo.add("type", source.yamlMapping("repo").value("type"));
-                                        if (patch.value("type") != null) {
-                                            repo = repo.add("type", patch.value("type"));
-                                        }
-                                        repo = repo.add("storage", source.yamlMapping("repo").value("storage"));
-                                        if (patch.value("storage") != null && Scalar.class.isAssignableFrom(patch.value("storage").getClass())) {
-                                            repo = repo.add("storage", patch.value("storage"));
-                                        }
-                                        repo = repo.add("permissions", source.yamlMapping("repo").value("permissions"));
-                                        if (patch.value("permissions") != null) {
-                                            repo = repo.add("permissions", patch.value("permissions"));
-                                        }
-                                        repo = repo.add("settings", source.yamlMapping("repo").value("settings"));
-                                        if (patch.value("permissions") != null) {
-                                            repo = repo.add("settings", patch.value("settings"));
-                                        }
-                                        return Yaml.createYamlMappingBuilder()
-                                            .add("repo", repo.build())
-                                            .build();
-                                    }
-                                ).to(SingleInterop.get());
-                            } else {
-                                final YamlMapping repo = config.yamlMapping("repo");
-                                final YamlNode type = repo.value("type");
-                                if (type == null || !Scalar.class.isAssignableFrom(type.getClass())) {
-                                    throw new IllegalStateException("Repository type required");
-                                }
-                                final YamlMapping stor = repo.yamlMapping("storage");
-                                if (stor == null) {
-                                    throw new IllegalStateException("Repository storage is required");
-                                }
-                                res = CompletableFuture.completedFuture(
-                                    Yaml.createYamlMappingBuilder().add(
-                                        "repo",
-                                        Yaml.createYamlMappingBuilder()
-                                            .add("type", type)
-                                            .add("storage", stor)
-                                            .add("permissions", repo.value("permissions"))
-                                            .build()
-                                    ).build()
-                                );
-                            }
-                            return res;
+            new PublisherAs(body).asciiString()
+                .thenApply(form -> URLDecoder.decode(form, StandardCharsets.US_ASCII)).thenCompose(
+                    form -> {
+                        final YamlMapping config = new Unchecked<>(
+                            () -> Yaml.createYamlInput(ApiRepoUpdateSlice.value(form, "config"))
+                                .readYamlMapping()
+                        ).value();
+                        final YamlMapping repo = config.yamlMapping("repo");
+                        final YamlNode type = repo.value("type");
+                        if (type == null || !Scalar.class.isAssignableFrom(type.getClass())) {
+                            throw new IllegalStateException("Repository type required");
                         }
-                        ).thenCompose(yaml -> this.configfile.save(key, new Content.From(yaml.toString().getBytes(StandardCharsets.UTF_8))))
-                        .thenApply(
+                        final YamlMapping ystor = repo.yamlMapping("storage");
+                        final String sstor = repo.string("storage");
+                        if (ystor == null && sstor == null) {
+                            throw new IllegalStateException("Repository storage is required");
+                        }
+                        YamlMappingBuilder yrepo = Yaml.createYamlMappingBuilder().add("type", type);
+                        if (ystor == null) {
+                            yrepo = yrepo.add("storage", sstor);
+                        } else {
+                            yrepo = yrepo.add("storage", ystor);
+                        }
+                        if (repo.value("permissions") != null) {
+                            yrepo = yrepo.add("permissions", repo.value("permissions"));
+                        }
+                        if (repo.value("settings") != null) {
+                            yrepo = yrepo.add("settings", repo.value("settings"));
+                        }
+                        final String name = ApiRepoUpdateSlice.value(form, "repo");
+                        return this.configfile.save(
+                            new Key.From(user, String.format("%s.yaml", name)),
+                            new Content.From(
+                                Yaml.createYamlMappingBuilder().add("repo", yrepo.build())
+                                    .build().toString().getBytes(StandardCharsets.UTF_8)
+                            )
+                        ).thenApply(
                             ignore -> new RsWithHeaders(
                                 new RsWithStatus(RsStatus.FOUND),
                                 new Headers.From("Location", String.format("/dashboard/%s/%s", user, name))
                             )
                         );
-                }
-            )
-        );
+                    })
+            );
     }
 
     /**
-     * Obtain value from payload.
+     * Obtain value from payload, payload is a query string (not url-encoded):
+     * <code>name1=value1&name2=value2</code>.
      * @param payload Payload to parse
      * @param name Parameter name to obtain
      * @return Parameter value
@@ -157,7 +124,7 @@ public final class ApiRepoUpdateSlice implements Slice {
      */
     private static String value(final String payload, final String name) {
         final int start = payload.indexOf(String.format("%s=", name)) + name.length() + 1;
-        int end = payload.indexOf(';', start);
+        int end = payload.indexOf('&', start);
         if (end == -1) {
             end = payload.length();
         }
