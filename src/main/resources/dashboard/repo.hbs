@@ -118,6 +118,49 @@ and <code>GET</code> for downloading.</p>
 http -a {{user}}:password PUT https://central.artipie.com/{{user}}/{{repo}}file.bin @file.bin
 # downloading file.bin
 http GET https://central.artipie.com/{{user}}/{{repo}}file.bin --output=./file.bin
+</pre>
+{{/eq}}{{#eq type "pypi"}}
+To publish your packages with <a href="https://packaging.python.org/tutorials/packaging-projects/#uploading-the-distribution-archives">twine</a>
+specify Artipie repository url with <code>--repository-url</code> option
+<pre>
+$ twine upload --repository-url http://central.artipie.com/{{user}}/{{name}}/ -u {{user}} -p password myproject/dist/*
+</pre>
+To install package with <code>pip install</code> specify Artipie repository url with <code>--index-url</code> option:
+<pre>
+$ pip install --index-url http://{{user}}:password@central.artipie.com/{{user}}/{{name}}/ myproject
+</pre>
+{{/eq}}{{#eq type "deb"}}
+Add local repository to the list of Debian packages for <code>apt</code> by adding
+the following line to the <code>/etc/apt/sources.list</code>:
+<pre>
+deb [trusted=yes] http://{{user}}:password@central.artipie.com/{{user}}/{{name}} {{name}} main
+</pre>
+Then use <code>apt-get</code> as usual.
+{{/eq}}{{#eq type "go"}}
+To use <code>go</code> repository declare the following environment variables:
+<pre>
+export GO111MODULE=on
+export GOPROXY="central.artipie.com/{{user}}/{{name}}"
+</pre>
+Now you can install packages directly from Artipie:
+<pre>
+go get -x -insecure golang.org/x/time
+</pre>
+{{/eq}}{{#eq type "rpm"}}
+To install packages from <code>rpm</code> Artipie repository, add the following file
+to <code>yum</code> settings by path <code>/etc/yum.repos.d/example.repo</code>:
+<pre>
+[example]
+name=Example Repository
+baseurl=http://{{user}}:password@central.artipie.com/{{user}}/{{name}}
+enabled=1
+gpgcheck=0
+</pre>
+Then <code>list</code> and <code>install</code> packages with specified repository:
+<pre>
+yum -y repo-pkgs example list
+yum -y repo-pkgs example install
+</pre>
 {{/eq}}
 
 {{/partial}}
