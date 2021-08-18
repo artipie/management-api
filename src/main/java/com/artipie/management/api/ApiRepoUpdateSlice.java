@@ -38,6 +38,7 @@ import org.reactivestreams.Publisher;
  * @checkstyle ExecutableStatementCountCheck (500 lines)
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle CyclomaticComplexityCheck (500 lines)
+ * @checkstyle NPathComplexityCheck (500 lines)
  */
 public final class ApiRepoUpdateSlice implements Slice {
 
@@ -60,7 +61,7 @@ public final class ApiRepoUpdateSlice implements Slice {
     }
 
     @Override
-    @SuppressWarnings("PMD.AvoidDuplicateLiterals")
+    @SuppressWarnings({"PMD.AvoidDuplicateLiterals", "PMD.NPathComplexity"})
     public Response response(final String line,
         final Iterable<Map.Entry<String, String>> headers, final Publisher<ByteBuffer> body) {
         final Matcher matcher = PTN.matcher(new RequestLineFrom(line).uri().getPath());
@@ -112,13 +113,13 @@ public final class ApiRepoUpdateSlice implements Slice {
                         ).thenApply(nothing -> name);
                     }).handle(
                         (name, throwable) -> {
-                            Response res;
+                            final Response res;
                             if (throwable == null) {
                                 res = new RsWithHeaders(
                                     new RsWithStatus(RsStatus.FOUND),
                                     new Headers.From("Location", String.format("/dashboard/%s/%s", user, name))
                                 );
-                            } else if(throwable.getCause() instanceof ArtipieException) {
+                            } else if (throwable.getCause() instanceof ArtipieException) {
                                 res = new RsWithBody(
                                     new RsWithStatus(RsStatus.BAD_REQUEST),
                                     String.format("Invalid yaml input:\n%s", throwable.getCause().getMessage()),
