@@ -9,6 +9,7 @@ import com.amihaiemil.eoyaml.Yaml;
 import com.amihaiemil.eoyaml.YamlMapping;
 import com.amihaiemil.eoyaml.YamlMappingBuilder;
 import com.amihaiemil.eoyaml.YamlNode;
+import com.artipie.ArtipieException;
 import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.ext.PublisherAs;
@@ -18,6 +19,7 @@ import com.artipie.http.Slice;
 import com.artipie.http.async.AsyncResponse;
 import com.artipie.http.rq.RequestLineFrom;
 import com.artipie.http.rs.RsStatus;
+import com.artipie.http.rs.RsWithBody;
 import com.artipie.http.rs.RsWithHeaders;
 import com.artipie.http.rs.RsWithStatus;
 import com.artipie.management.ConfigFiles;
@@ -36,6 +38,7 @@ import org.reactivestreams.Publisher;
  * @checkstyle ExecutableStatementCountCheck (500 lines)
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle CyclomaticComplexityCheck (500 lines)
+ * @checkstyle NPathComplexityCheck (500 lines)
  */
 public final class ApiRepoUpdateSlice implements Slice {
 
@@ -58,7 +61,7 @@ public final class ApiRepoUpdateSlice implements Slice {
     }
 
     @Override
-    @SuppressWarnings("PMD.AvoidDuplicateLiterals")
+    @SuppressWarnings({"PMD.AvoidDuplicateLiterals", "PMD.NPathComplexity"})
     public Response response(final String line,
         final Iterable<Map.Entry<String, String>> headers, final Publisher<ByteBuffer> body) {
         final Matcher matcher = PTN.matcher(new RequestLineFrom(line).uri().getPath());
@@ -76,14 +79,17 @@ public final class ApiRepoUpdateSlice implements Slice {
                                 .readYamlMapping()
                         ).value();
                         final YamlMapping repo = config.yamlMapping("repo");
+                        if (repo == null) {
+                            throw new ArtipieException("Repo section is required");
+                        }
                         final YamlNode type = repo.value("type");
                         if (type == null || !Scalar.class.isAssignableFrom(type.getClass())) {
-                            throw new IllegalStateException("Repository type required");
+                            throw new ArtipieException("Repository type required");
                         }
                         final YamlMapping ystor = repo.yamlMapping("storage");
                         final String sstor = repo.string("storage");
                         if (ystor == null && sstor == null) {
-                            throw new IllegalStateException("Repository storage is required");
+                            throw new ArtipieException("Repository storage is required");
                         }
                         YamlMappingBuilder yrepo = Yaml.createYamlMappingBuilder().add("type", type);
                         if (ystor == null) {
@@ -104,13 +110,27 @@ public final class ApiRepoUpdateSlice implements Slice {
                                 Yaml.createYamlMappingBuilder().add("repo", yrepo.build())
                                     .build().toString().getBytes(StandardCharsets.UTF_8)
                             )
-                        ).thenApply(
-                            ignore -> new RsWithHeaders(
-                                new RsWithStatus(RsStatus.FOUND),
-                                new Headers.From("Location", String.format("/dashboard/%s/%s", user, name))
-                            )
-                        );
-                    })
+                        ).thenApply(nothing -> name);
+                    }).handle(
+                        (name, throwable) -> {
+                            final Response res;
+                            if (throwable == null) {
+                                res = new RsWithHeaders(
+                                    new RsWithStatus(RsStatus.FOUND),
+                                    new Headers.From("Location", String.format("/dashboard/%s/%s", user, name))
+                                );
+                            } else if (throwable.getCause() instanceof ArtipieException) {
+                                res = new RsWithBody(
+                                    new RsWithStatus(RsStatus.BAD_REQUEST),
+                                    String.format("Invalid yaml input:\n%s", throwable.getCause().getMessage()),
+                                    StandardCharsets.UTF_8
+                                );
+                            } else {
+                                res = new RsWithStatus(RsStatus.INTERNAL_ERROR);
+                            }
+                            return res;
+                        }
+                    )
             );
     }
 
