@@ -12,6 +12,7 @@ import com.artipie.asto.Storage;
 import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.asto.test.ContentIs;
 import com.artipie.http.Headers;
+import com.artipie.http.hm.RsHasBody;
 import com.artipie.http.hm.RsHasStatus;
 import com.artipie.http.hm.SliceHasResponse;
 import com.artipie.http.rq.RequestLine;
@@ -21,7 +22,9 @@ import com.artipie.management.FakeConfigFile;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -121,6 +124,44 @@ final class ApiRepoUpdateSliceTest {
                 new Key.From(String.format("%s.yaml", ApiRepoUpdateSliceTest.userRepo()))
             ).join(),
             new ContentIs(yaml, StandardCharsets.UTF_8)
+        );
+    }
+
+    @Test
+    void returnsBabRequestOnInvalidYaml() {
+        MatcherAssert.assertThat(
+            "Returns BAD REQUEST",
+            new ApiRepoUpdateSlice(new FakeConfigFile(this.storage)),
+            new SliceHasResponse(
+                Matchers.allOf(
+                    new RsHasStatus(RsStatus.BAD_REQUEST),
+                    new RsHasBody("Invalid yaml input:\nRepo section is required".getBytes())
+                ),
+                new RequestLine(
+                    RqMethod.POST, String.format("/api/repos/%s", ApiRepoUpdateSliceTest.USER)
+                ),
+                new Headers.From(
+                    "Location", String.format("/dashboard/%s", ApiRepoUpdateSliceTest.userRepo())
+                ),
+                new Content.From(body(ApiRepoUpdateSliceTest.REPO, "abc123 : sdfdsf : sdfsdf"))
+            )
+        );
+    }
+
+    @Test
+    void returnsInternalErrorOnInvalidRequest() {
+        MatcherAssert.assertThat(
+            new ApiRepoUpdateSlice(new FakeConfigFile(this.storage)),
+            new SliceHasResponse(
+                new RsHasStatus(RsStatus.INTERNAL_ERROR),
+                new RequestLine(
+                    RqMethod.POST, String.format("/api/repos/%s", ApiRepoUpdateSliceTest.USER)
+                ),
+                new Headers.From(
+                    "Location", String.format("/dashboard/%s", ApiRepoUpdateSliceTest.userRepo())
+                ),
+                Content.EMPTY
+            )
         );
     }
 
