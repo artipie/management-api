@@ -148,6 +148,23 @@ final class ApiRepoUpdateSliceTest {
         );
     }
 
+    @Test
+    void returnsInternalErrorOnInvalidRequest() {
+        MatcherAssert.assertThat(
+            new ApiRepoUpdateSlice(new FakeConfigFile(this.storage)),
+            new SliceHasResponse(
+                new RsHasStatus(RsStatus.INTERNAL_ERROR),
+                new RequestLine(
+                    RqMethod.POST, String.format("/api/repos/%s", ApiRepoUpdateSliceTest.USER)
+                ),
+                new Headers.From(
+                    "Location", String.format("/dashboard/%s", ApiRepoUpdateSliceTest.userRepo())
+                ),
+                Content.EMPTY
+            )
+        );
+    }
+
     private static byte[] body(final String reponame, final String yaml) {
         return URLEncoder.encode(
             String.format("repo=%s&config=%s", reponame, yaml),
