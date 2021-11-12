@@ -76,7 +76,12 @@ public final class FromRqLine {
         /**
          * Create repo pattern.
          */
-        CREATE_REPO("/api/repositories/.*");
+        CREATE_REPO("/api/repositories/.*"),
+
+        /**
+         * Users info pattern.
+         */
+        USERS("/api/security/users");
 
         /**
          * Pattern.
