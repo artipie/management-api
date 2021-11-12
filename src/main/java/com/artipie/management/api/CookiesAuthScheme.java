@@ -39,7 +39,9 @@ public final class CookiesAuthScheme implements AuthScheme {
     private static final String SCHEME = "Cookie";
 
     @Override
-    public CompletionStage<Result> authenticate(final Iterable<Map.Entry<String, String>> headers) {
+    public CompletionStage<Result> authenticate(
+        final Iterable<Map.Entry<String, String>> headers, final String line
+    ) {
         return CompletableFuture.completedFuture(
             CookiesAuthScheme.session(
                 Optional.ofNullable(
