@@ -94,7 +94,8 @@ class ApiAuthSliceTest {
     @ValueSource(
         strings = {
             "/api/security/users/any", "/api/security/permissions/my_repo",
-            "/api/security/permissions", "/api/repositories/abc/123"
+            "/api/security/permissions", "/api/repositories/abc/123",
+            "/api/security/users"
         }
     )
     void passesByRqPatterns(final String rqline) {
