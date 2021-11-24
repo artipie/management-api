@@ -32,12 +32,12 @@ import org.reactivestreams.Publisher;
 /**
  * Repo {@code DELETE} API.
  * @since 0.5
- * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @todo #321:30min Remove code duplication.
  *  In this class and in the class with tests for this one
  *  a pair of very similar utils methods are used which
  *  are also used in classes for update repo. It is necessary
  *  to eliminate this code duplication.
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public final class ApiRepoDeleteSlice implements Slice {
     /**
@@ -148,6 +148,7 @@ public final class ApiRepoDeleteSlice implements Slice {
      * @param payload Payload to parse
      * @param name Parameter name to obtain
      * @return Parameter value
+     * @checkstyle StringLiteralsConcatenationCheck (10 lines)
      */
     private static String value(final String payload, final String name) {
         final int start = payload.indexOf(String.format("%s=", name)) + name.length() + 1;
