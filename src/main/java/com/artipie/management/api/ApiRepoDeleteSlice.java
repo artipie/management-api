@@ -5,7 +5,6 @@
 package com.artipie.management.api;
 
 import com.artipie.ArtipieException;
-import com.artipie.asto.FailedCompletionStage;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.ext.PublisherAs;
@@ -48,7 +47,7 @@ public final class ApiRepoDeleteSlice implements Slice {
     );
 
     /**
-     * Config file to support `yaml` and `.yml` extensions.
+     * Config file to support `.yaml` and `.yml` extensions.
      */
     private final ConfigFiles configfile;
 
@@ -60,7 +59,7 @@ public final class ApiRepoDeleteSlice implements Slice {
     /**
      * Ctor.
      * @param storage Storage
-     * @param configfile Config file to support `yaml` and `.yml` extensions
+     * @param configfile Config file to support `.yaml` and `.yml` extensions
      */
     public ApiRepoDeleteSlice(final Storage storage, final ConfigFiles configfile) {
         this.storage = storage;
@@ -84,62 +83,63 @@ public final class ApiRepoDeleteSlice implements Slice {
         final String user = matcher.group("user");
         return new AsyncResponse(
             new PublisherAs(body).asciiString()
-                .thenApply(form -> URLDecoder.decode(form, StandardCharsets.US_ASCII)).thenCompose(
+                .thenApply(form -> URLDecoder.decode(form, StandardCharsets.US_ASCII))
+                .thenCompose(
                     form -> {
                         final String name = ApiRepoDeleteSlice.value(form, "repo");
                         final Key repo = new Key.From(user, String.format("%s.yaml", name));
                         return this.configfile.exists(repo)
                             .thenCompose(
                                 exists -> {
-                                    final CompletionStage<Void> res;
+                                    final CompletionStage<Response> res;
                                     if (exists) {
-                                        res = this.configfile.delete(repo)
-                                            .thenCompose(
-                                                noth -> this.storage.list(
-                                                    new Key.From(user, name)
-                                                ).thenCompose(
-                                                    keys -> CompletableFuture.allOf(
-                                                        keys.stream().map(
-                                                            this.storage::delete
-                                                        ).toArray(CompletableFuture[]::new)
-                                                    )
+                                        res = this.deleteConfigAndItems(
+                                            repo, new Key.From(user, name)
+                                        ).thenApply(
+                                            noth -> new RsWithHeaders(
+                                                new RsWithStatus(RsStatus.OK),
+                                                new Headers.From(
+                                                    "Location",
+                                                    String.format("/dashboard/%s", user)
                                                 )
-                                            );
+                                            )
+                                        );
                                     } else {
-                                        res = new FailedCompletionStage<>(
-                                            new ArtipieException(
-                                                String.format(
-                                                    "Repo '%s' does not exist", repo.string()
-                                                )
+                                        res = CompletableFuture.completedFuture(
+                                            new RsWithBody(
+                                                new RsWithStatus(RsStatus.BAD_REQUEST),
+                                                String.format("Failed to delete repo '%s'", repo),
+                                                StandardCharsets.UTF_8
                                             )
                                         );
                                     }
                                     return res;
                                 }
-                            ).thenApply(nothing -> repo);
-                    }).handle(
-                        (repo, thr) -> {
-                            final Response res;
-                            if (thr == null) {
-                                res = new RsWithHeaders(
-                                    new RsWithStatus(RsStatus.OK),
-                                    new Headers.From(
-                                        "Location", String.format("/dashboard/%s", user)
-                                    )
-                                );
-                            } else if (thr.getCause() instanceof ArtipieException) {
-                                res = new RsWithBody(
-                                    new RsWithStatus(RsStatus.BAD_REQUEST),
-                                    String.format("Failed to delete repo '%s'", repo),
-                                    StandardCharsets.UTF_8
-                                );
-                            } else {
-                                res = new RsWithStatus(RsStatus.INTERNAL_ERROR);
-                            }
-                            return res;
-                        }
+                            );
+                    }
                 )
         );
+    }
+
+    /**
+     * Removes conifuration file and items from the storage.
+     * @param repo Key to the repo configuration
+     * @param prefix Key to the repo with items
+     * @return Result of completion
+     */
+    private CompletionStage<Void> deleteConfigAndItems(final Key repo, final Key prefix) {
+        return this.configfile.delete(repo)
+            .thenCompose(
+                noth -> this.storage.list(prefix).thenCompose(
+                    keys -> {
+                        CompletableFuture<Void> res = CompletableFuture.allOf();
+                        for (final Key key : keys) {
+                            res = res.thenCompose(nothin -> this.storage.delete(key));
+                        }
+                        return res;
+                    }
+                )
+            );
     }
 
     /**
