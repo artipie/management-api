@@ -4,7 +4,6 @@
  */
 package com.artipie.management.api;
 
-import com.artipie.ArtipieException;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.ext.PublisherAs;
@@ -74,7 +73,7 @@ public final class ApiRepoDeleteSlice implements Slice {
     ) {
         final Matcher matcher = PTN.matcher(new RequestLineFrom(line).uri().getPath());
         if (!matcher.matches()) {
-            throw new ArtipieException(
+            throw new IllegalStateException(
                 String.format(
                     "Uri '%s' does not match to the pattern '%s'", line, ApiRepoDeleteSlice.PTN
                 )
