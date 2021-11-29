@@ -35,6 +35,7 @@ repo:
       - download
 {{/if}}</textarea>
     <input name="repo" type="hidden" value="{{name}}"/>
+    <input name="method" type="hidden" value="update"/>
     <input id="config-submit" type="submit" value="Update"/>
   </fieldset>
 </form>
@@ -42,6 +43,7 @@ repo:
 <form id="repo-delete-form" action="/api/repos/{{user}}?method=delete" method="POST">
     <fieldset>
         <input name="repo" type="hidden" value="{{name}}"/>
+        <input name="method" type="hidden" value="delete"/>
         <input id="repo-delete" type="submit" value="Delete"/>
     </fieldset>
 </form>
