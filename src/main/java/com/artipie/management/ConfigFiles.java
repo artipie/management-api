@@ -34,6 +34,13 @@ public interface ConfigFiles {
     CompletionStage<Content> value(Key filename);
 
     /**
+     * Removes value from storage. Fails if value does not exist.
+     * @param filename Filename
+     * @return Result of completion.
+     */
+    CompletionStage<Void> delete(Key filename);
+
+    /**
      * Saves the bytes to the specified key.
      *
      * @param key The key
