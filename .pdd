@@ -3,6 +3,7 @@
 --exclude logo.png
 --exclude target/**/*
 --exclude src/main/resources/images/**/*
+--exclude src/test/resources/**/*
 --exclude .idea/**/*
 --exclude examples/**/*
 --rule min-words:20
