@@ -12,11 +12,14 @@ import com.artipie.http.Slice;
 import com.artipie.http.async.AsyncResponse;
 import com.artipie.http.rs.StandardRs;
 import com.artipie.management.ConfigFiles;
-import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.reactivestreams.Publisher;
 
 /**
@@ -59,19 +62,18 @@ public final class ApiRepoPostRtSlice implements Slice {
         return new AsyncResponse(
             new PublisherAs(content)
                 .asciiString()
-                .thenApply(form -> URLDecoder.decode(form, StandardCharsets.US_ASCII))
                 .thenApply(
                     form -> {
                         final Response res;
-                        final String method = ApiRepoPostRtSlice.value(form, "method");
-                        if (Method.UPDATE.value().equals(method)) {
+                        final String action = ApiRepoPostRtSlice.value(form, "action");
+                        if (Action.UPDATE.value().equals(action)) {
                             res = new ApiRepoUpdateSlice(this.configfile)
                                 .response(
                                     line,
                                     headers,
                                     new Content.From(form.getBytes(StandardCharsets.US_ASCII))
                                 );
-                        } else if (Method.DELETE.value().equals(method)) {
+                        } else if (Action.DELETE.value().equals(action)) {
                             res = new ApiRepoDeleteSlice(this.storage, this.configfile)
                                 .response(
                                     line,
@@ -88,10 +90,10 @@ public final class ApiRepoPostRtSlice implements Slice {
     }
 
     /**
-     * Type of method of request.
+     * Type of action of request.
      * @since 0.5
      */
-    private enum Method {
+    private enum Action {
         /**
          * Update method.
          */
@@ -110,7 +112,7 @@ public final class ApiRepoPostRtSlice implements Slice {
          * Ctor.
          * @param name String value
          */
-        Method(final String name) {
+        Action(final String name) {
             this.name = name;
         }
 
@@ -124,19 +126,26 @@ public final class ApiRepoPostRtSlice implements Slice {
     }
 
     /**
-     * Obtain value from payload, payload is a query string (not url-encoded):
-     * <code>name1=value1&name2=value2</code>.
+     * Obtain value from payload, payload is a query string (url-encoded):
+     * <code>name1=value%26and&name2=value2</code>.
      * @param payload Payload to parse
      * @param name Parameter name to obtain
      * @return Parameter value
      * @checkstyle StringLiteralsConcatenationCheck (10 lines)
      */
     private static String value(final String payload, final String name) {
-        final int start = payload.indexOf(String.format("%s=", name)) + name.length() + 1;
-        int end = payload.indexOf('&', start);
-        if (end == -1) {
-            end = payload.length();
+        Optional<String> res = Optional.empty();
+        final List<NameValuePair> params;
+        params = URLEncodedUtils.parse(payload, StandardCharsets.US_ASCII);
+        for (final NameValuePair param : params) {
+            if (param.getName().equals(name)) {
+                res = Optional.of(param.getValue());
+            }
         }
-        return payload.substring(start, end);
+        return res.orElseThrow(
+            () -> new IllegalStateException(
+                String.format("Failed to find value of '%s' in body", name)
+            )
+        );
     }
 }
