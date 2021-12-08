@@ -47,10 +47,10 @@ final class ApiRepoDeleteSliceTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"bin.yaml, bin.yml"})
+    @ValueSource(strings = {"bin.yaml", "bin.yml"})
     void deletesRepoConfig(final String config) {
         final String user = "bob";
-        new TestResource(config).saveTo(this.storage, new Key.From(user, config));
+        new TestResource("bin.yml").saveTo(this.storage, new Key.From(user, config));
         MatcherAssert.assertThat(
             "Repo config was not removed",
             new ApiRepoDeleteSlice(this.storage, new FakeConfigFile(this.storage)),
