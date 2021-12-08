@@ -17,7 +17,7 @@ import com.artipie.http.rs.RsWithBody;
 import com.artipie.http.rs.RsWithHeaders;
 import com.artipie.http.rs.RsWithStatus;
 import com.artipie.management.ConfigFiles;
-import java.net.URLDecoder;
+import com.artipie.management.misc.ValueFromBody;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -78,10 +78,10 @@ final class ApiRepoDeleteSlice implements Slice {
         final String user = matcher.group("user");
         return new AsyncResponse(
             new PublisherAs(body).asciiString()
-                .thenApply(form -> URLDecoder.decode(form, StandardCharsets.US_ASCII))
                 .thenCompose(
                     form -> {
-                        final String name = ApiRepoDeleteSlice.value(form, "repo");
+                        final ValueFromBody vals = new ValueFromBody(form);
+                        final String name = vals.byNameOrThrow("repo");
                         final Key repo = new Key.From(user, String.format("%s.yaml", name));
                         return this.configfile.exists(repo)
                             .thenCompose(
@@ -135,22 +135,5 @@ final class ApiRepoDeleteSlice implements Slice {
                     }
                 )
             );
-    }
-
-    /**
-     * Obtain value from payload, payload is a query string (not url-encoded):
-     * <code>name1=value1&name2=value2</code>.
-     * @param payload Payload to parse
-     * @param name Parameter name to obtain
-     * @return Parameter value
-     * @checkstyle StringLiteralsConcatenationCheck (10 lines)
-     */
-    private static String value(final String payload, final String name) {
-        final int start = payload.indexOf(String.format("%s=", name)) + name.length() + 1;
-        int end = payload.indexOf('&', start);
-        if (end == -1) {
-            end = payload.length();
-        }
-        return payload.substring(start, end);
     }
 }

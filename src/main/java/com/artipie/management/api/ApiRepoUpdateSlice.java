@@ -23,7 +23,7 @@ import com.artipie.http.rs.RsWithBody;
 import com.artipie.http.rs.RsWithHeaders;
 import com.artipie.http.rs.RsWithStatus;
 import com.artipie.management.ConfigFiles;
-import java.net.URLDecoder;
+import com.artipie.management.misc.ValueFromBody;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -67,13 +67,9 @@ final class ApiRepoUpdateSlice implements Slice {
         // @checkstyle LineLengthCheck (500 lines)
         return new AsyncResponse(
             new PublisherAs(body).asciiString()
-                .thenApply(form -> URLDecoder.decode(form, StandardCharsets.US_ASCII)).thenCompose(
-                    form -> {
-                        final YamlMapping config = new Unchecked<>(
-                            () -> Yaml.createYamlInput(ApiRepoUpdateSlice.value(form, "config"))
-                                .readYamlMapping()
-                        ).value();
-                        final YamlMapping repo = config.yamlMapping("repo");
+                .thenApply(ValueFromBody::new).thenCompose(
+                    vals -> {
+                        final YamlMapping repo = configsFromBody(vals).yamlMapping("repo");
                         if (repo == null) {
                             throw new ArtipieException("Repo section is required");
                         }
@@ -98,7 +94,7 @@ final class ApiRepoUpdateSlice implements Slice {
                         if (repo.value("settings") != null) {
                             yrepo = yrepo.add("settings", repo.value("settings"));
                         }
-                        final String name = ApiRepoUpdateSlice.value(form, "repo");
+                        final String name = vals.byNameOrThrow("repo");
                         return this.configfile.save(
                             new Key.From(user, String.format("%s.yaml", name)),
                             new Content.From(
@@ -130,19 +126,15 @@ final class ApiRepoUpdateSlice implements Slice {
     }
 
     /**
-     * Obtain value from payload, payload is a query string (not url-encoded):
-     * <code>name1=value1&name2=value2</code>.
-     * @param payload Payload to parse
-     * @param name Parameter name to obtain
-     * @return Parameter value
-     * @checkstyle StringLiteralsConcatenationCheck (10 lines)
+     * Obtains config from body.
+     * @param decoded Decoded body
+     * @return Config content from body
      */
-    private static String value(final String payload, final String name) {
-        final int start = payload.indexOf(String.format("%s=", name)) + name.length() + 1;
-        int end = payload.indexOf('&', start);
-        if (end == -1) {
-            end = payload.length();
-        }
-        return payload.substring(start, end);
+    private static YamlMapping configsFromBody(final ValueFromBody decoded) {
+        return new Unchecked<>(
+            () -> Yaml.createYamlInput(
+                decoded.byNameOrThrow("config")
+            ).readYamlMapping()
+        ).value();
     }
 }
