@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.reactivestreams.Publisher;
 
 /**
@@ -37,14 +36,7 @@ import org.reactivestreams.Publisher;
  *  to eliminate this code duplication.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
-public final class ApiRepoDeleteSlice implements Slice {
-    /**
-     * URI path pattern.
-     */
-    private static final Pattern PTN = Pattern.compile(
-        "/api/repos/(?<user>[^/?.]+)\\?method=delete$"
-    );
-
+final class ApiRepoDeleteSlice implements Slice {
     /**
      * Config file to support `.yaml` and `.yml` extensions.
      */
@@ -60,7 +52,7 @@ public final class ApiRepoDeleteSlice implements Slice {
      * @param storage Storage
      * @param configfile Config file to support `.yaml` and `.yml` extensions
      */
-    public ApiRepoDeleteSlice(final Storage storage, final ConfigFiles configfile) {
+    ApiRepoDeleteSlice(final Storage storage, final ConfigFiles configfile) {
         this.storage = storage;
         this.configfile = configfile;
     }
@@ -71,11 +63,15 @@ public final class ApiRepoDeleteSlice implements Slice {
         final Iterable<Map.Entry<String, String>> headers,
         final Publisher<ByteBuffer> body
     ) {
-        final Matcher matcher = PTN.matcher(new RequestLineFrom(line).uri().getPath());
+        final Matcher matcher = ApiRepoPostRtSlice.PTN.matcher(
+            new RequestLineFrom(line).uri().getPath()
+        );
         if (!matcher.matches()) {
             throw new IllegalStateException(
                 String.format(
-                    "Uri '%s' does not match to the pattern '%s'", line, ApiRepoDeleteSlice.PTN
+                    "Uri '%s' does not match to the pattern '%s'",
+                    line,
+                    ApiRepoPostRtSlice.PTN
                 )
             );
         }
