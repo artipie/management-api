@@ -28,7 +28,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.cactoos.scalar.Unchecked;
 import org.reactivestreams.Publisher;
 
@@ -40,13 +39,7 @@ import org.reactivestreams.Publisher;
  * @checkstyle CyclomaticComplexityCheck (500 lines)
  * @checkstyle NPathComplexityCheck (500 lines)
  */
-public final class ApiRepoUpdateSlice implements Slice {
-
-    /**
-     * URI path pattern.
-     */
-    private static final Pattern PTN = Pattern.compile("/api/repos/(?<user>[^/.]+)");
-
+final class ApiRepoUpdateSlice implements Slice {
     /**
      * Config file to support `yaml` and `.yml` extensions.
      */
@@ -56,7 +49,7 @@ public final class ApiRepoUpdateSlice implements Slice {
      * New patch API.
      * @param configfile Config file to support `yaml` and `.yml` extensions
      */
-    public ApiRepoUpdateSlice(final ConfigFiles configfile) {
+    ApiRepoUpdateSlice(final ConfigFiles configfile) {
         this.configfile = configfile;
     }
 
@@ -64,7 +57,9 @@ public final class ApiRepoUpdateSlice implements Slice {
     @SuppressWarnings({"PMD.AvoidDuplicateLiterals", "PMD.NPathComplexity"})
     public Response response(final String line,
         final Iterable<Map.Entry<String, String>> headers, final Publisher<ByteBuffer> body) {
-        final Matcher matcher = PTN.matcher(new RequestLineFrom(line).uri().getPath());
+        final Matcher matcher = ApiRepoPostRtSlice.PTN.matcher(
+            new RequestLineFrom(line).uri().getPath()
+        );
         if (!matcher.matches()) {
             throw new IllegalStateException("Should match");
         }
