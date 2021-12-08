@@ -127,13 +127,13 @@ final class ApiRepoUpdateSlice implements Slice {
 
     /**
      * Obtains config from body.
-     * @param decoded Decoded body
+     * @param vals Values in body
      * @return Config content from body
      */
-    private static YamlMapping configsFromBody(final ValueFromBody decoded) {
+    private static YamlMapping configsFromBody(final ValueFromBody vals) {
         return new Unchecked<>(
             () -> Yaml.createYamlInput(
-                decoded.byNameOrThrow("config")
+                vals.byNameOrThrow("config")
             ).readYamlMapping()
         ).value();
     }

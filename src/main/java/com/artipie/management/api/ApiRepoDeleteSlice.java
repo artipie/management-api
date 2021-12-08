@@ -29,11 +29,6 @@ import org.reactivestreams.Publisher;
 /**
  * Repo {@code DELETE} API.
  * @since 0.5
- * @todo #321:30min Remove code duplication.
- *  In this class and in the class with tests for this one
- *  a pair of very similar utils methods are used which
- *  are also used in classes for update repo. It is necessary
- *  to eliminate this code duplication.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 final class ApiRepoDeleteSlice implements Slice {

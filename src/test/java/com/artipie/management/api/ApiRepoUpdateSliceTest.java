@@ -189,10 +189,11 @@ final class ApiRepoUpdateSliceTest {
     }
 
     private static byte[] body(final String reponame, final String yaml) {
-        return URLEncoder.encode(
-            String.format("repo=%s&config=%s", reponame, yaml),
-            StandardCharsets.US_ASCII
-        ).getBytes();
+        return String.format(
+            "repo=%s&config=%s",
+            reponame,
+            URLEncoder.encode(yaml, StandardCharsets.US_ASCII)
+        ).getBytes(StandardCharsets.US_ASCII);
     }
 
     private static String userRepo() {
