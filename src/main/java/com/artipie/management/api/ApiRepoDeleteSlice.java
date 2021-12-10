@@ -119,16 +119,6 @@ final class ApiRepoDeleteSlice implements Slice {
      */
     private CompletionStage<Void> deleteConfigAndItems(final Key repo, final Key prefix) {
         return this.configfile.delete(repo)
-            .thenCompose(
-                noth -> this.storage.list(prefix).thenCompose(
-                    keys -> {
-                        CompletableFuture<Void> res = CompletableFuture.allOf();
-                        for (final Key key : keys) {
-                            res = res.thenCompose(nothin -> this.storage.delete(key));
-                        }
-                        return res;
-                    }
-                )
-            );
+            .thenCompose(noth -> this.storage.deleteAll(prefix));
     }
 }
