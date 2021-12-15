@@ -41,7 +41,7 @@ public final class ValueFromBody {
      * @param payload Information which was passed in the body
      */
     public ValueFromBody(final String payload) {
-        this(payload, StandardCharsets.US_ASCII);
+        this(payload, StandardCharsets.UTF_8);
     }
 
     /**

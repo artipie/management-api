@@ -45,7 +45,7 @@ final class ValueFromBodyTest {
         bldr.addParameter("second", "ignore");
         MatcherAssert.assertThat(
             new ValueFromBody(
-                bldr.build().getRawQuery(), StandardCharsets.US_ASCII
+                bldr.build().getRawQuery(), StandardCharsets.UTF_8
             ).byName(key).get(),
             new IsEqual<>(val)
         );

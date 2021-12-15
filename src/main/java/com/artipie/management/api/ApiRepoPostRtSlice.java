@@ -65,13 +65,13 @@ public final class ApiRepoPostRtSlice implements Slice {
                     form -> {
                         final Response res;
                         final ValueFromBody vals = new ValueFromBody(form);
-                        final Optional<String> meth = vals.byName("method");
+                        final Optional<String> meth = vals.byName("action");
                         if (meth.isPresent() && Action.UPDATE.value().equals(meth.get())) {
                             res = new ApiRepoUpdateSlice(this.configfile)
                                 .response(
                                     line, headers,
                                     new Content.From(
-                                        vals.payload().getBytes(StandardCharsets.US_ASCII)
+                                        vals.payload().getBytes(StandardCharsets.UTF_8)
                                     )
                                 );
                         } else if (meth.isPresent() && Action.DELETE.value().equals(meth.get())) {
@@ -79,7 +79,7 @@ public final class ApiRepoPostRtSlice implements Slice {
                                 .response(
                                     line, headers,
                                     new Content.From(
-                                        vals.payload().getBytes(StandardCharsets.US_ASCII)
+                                        vals.payload().getBytes(StandardCharsets.UTF_8)
                                     )
                                 );
                         } else {
