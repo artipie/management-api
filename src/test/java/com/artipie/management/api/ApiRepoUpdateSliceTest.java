@@ -165,18 +165,7 @@ final class ApiRepoUpdateSliceTest {
         );
     }
 
-    private static byte[] body(final String reponame, final String yaml) {
-        return URLEncoder.encode(
-            String.format("repo=%s&config=%s", reponame, yaml),
-            StandardCharsets.US_ASCII
-        ).getBytes();
-    }
-
-    private static String userRepo() {
-        return String.format("%s/%s", ApiRepoUpdateSliceTest.USER, ApiRepoUpdateSliceTest.REPO);
-    }
-
-    private static String yaml(final String type, final boolean full) {
+    static String yaml(final String type, final boolean full) {
         YamlMappingBuilder repo = Yaml.createYamlMappingBuilder()
             .add("type", type);
         if (full) {
@@ -199,4 +188,15 @@ final class ApiRepoUpdateSliceTest {
         return Yaml.createYamlMappingBuilder().add("repo", repo.build()).build().toString();
     }
 
+    private static byte[] body(final String reponame, final String yaml) {
+        return String.format(
+            "repo=%s&config=%s",
+            reponame,
+            URLEncoder.encode(yaml, StandardCharsets.US_ASCII)
+        ).getBytes(StandardCharsets.US_ASCII);
+    }
+
+    private static String userRepo() {
+        return String.format("%s/%s", ApiRepoUpdateSliceTest.USER, ApiRepoUpdateSliceTest.REPO);
+    }
 }
