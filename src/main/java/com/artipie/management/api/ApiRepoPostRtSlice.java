@@ -10,16 +10,15 @@ import com.artipie.asto.ext.PublisherAs;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import com.artipie.http.async.AsyncResponse;
-import com.artipie.http.rs.StandardRs;
+import com.artipie.http.rs.RsStatus;
+import com.artipie.http.rs.RsWithStatus;
 import com.artipie.management.ConfigFiles;
+import com.artipie.management.misc.ValueFromBody;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.utils.URLEncodedUtils;
 import org.reactivestreams.Publisher;
 
 /**
@@ -65,23 +64,26 @@ public final class ApiRepoPostRtSlice implements Slice {
                 .thenApply(
                     form -> {
                         final Response res;
-                        final String action = ApiRepoPostRtSlice.value(form, "action");
-                        if (Action.UPDATE.value().equals(action)) {
+                        final ValueFromBody vals = new ValueFromBody(form);
+                        final Optional<String> meth = vals.byName("action");
+                        if (meth.isPresent() && Action.UPDATE.value().equals(meth.get())) {
                             res = new ApiRepoUpdateSlice(this.configfile)
                                 .response(
-                                    line,
-                                    headers,
-                                    new Content.From(form.getBytes(StandardCharsets.US_ASCII))
+                                    line, headers,
+                                    new Content.From(
+                                        vals.payload().getBytes(StandardCharsets.UTF_8)
+                                    )
                                 );
-                        } else if (Action.DELETE.value().equals(action)) {
+                        } else if (meth.isPresent() && Action.DELETE.value().equals(meth.get())) {
                             res = new ApiRepoDeleteSlice(this.storage, this.configfile)
                                 .response(
-                                    line,
-                                    headers,
-                                    new Content.From(form.getBytes(StandardCharsets.US_ASCII))
+                                    line, headers,
+                                    new Content.From(
+                                        vals.payload().getBytes(StandardCharsets.UTF_8)
+                                    )
                                 );
                         } else {
-                            res = StandardRs.NOT_FOUND;
+                            res = new RsWithStatus(RsStatus.BAD_REQUEST);
                         }
                         return res;
                     }
@@ -123,29 +125,5 @@ public final class ApiRepoPostRtSlice implements Slice {
         public String value() {
             return this.name;
         }
-    }
-
-    /**
-     * Obtain value from payload, payload is a query string (url-encoded):
-     * <code>name1=value%26and&name2=value2</code>.
-     * @param payload Payload to parse
-     * @param name Parameter name to obtain
-     * @return Parameter value
-     * @checkstyle StringLiteralsConcatenationCheck (10 lines)
-     */
-    private static String value(final String payload, final String name) {
-        Optional<String> res = Optional.empty();
-        final List<NameValuePair> params;
-        params = URLEncodedUtils.parse(payload, StandardCharsets.US_ASCII);
-        for (final NameValuePair param : params) {
-            if (param.getName().equals(name)) {
-                res = Optional.of(param.getValue());
-            }
-        }
-        return res.orElseThrow(
-            () -> new IllegalStateException(
-                String.format("Failed to find value of '%s' in body", name)
-            )
-        );
     }
 }

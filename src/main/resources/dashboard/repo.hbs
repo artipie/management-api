@@ -40,7 +40,7 @@ repo:
   </fieldset>
 </form>
 
-<form id="repo-delete-form" action="/api/repos/{{user}}?method=delete" method="POST">
+<form id="repo-delete-form" action="/api/repos/{{user}}" method="POST">
     <fieldset>
         <input name="repo" type="hidden" value="{{name}}"/>
         <input name="action" type="hidden" value="delete"/>

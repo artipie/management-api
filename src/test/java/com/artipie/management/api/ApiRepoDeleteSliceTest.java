@@ -17,7 +17,6 @@ import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.management.FakeConfigFile;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -64,7 +63,7 @@ final class ApiRepoDeleteSliceTest {
                     )
                 ),
                 new RequestLine(
-                    RqMethod.POST, String.format("/api/repos/%s?method=delete", user)
+                    RqMethod.POST, String.format("/api/repos/%s", user)
                 ),
                 Headers.EMPTY,
                 ApiRepoDeleteSliceTest.body("bin")
@@ -79,10 +78,7 @@ final class ApiRepoDeleteSliceTest {
 
     private static Content body(final String reponame) {
         return new Content.From(
-            URLEncoder.encode(
-                String.format("repo=%s", reponame),
-                StandardCharsets.US_ASCII
-            ).getBytes()
+            String.format("repo=%s", reponame).getBytes(StandardCharsets.US_ASCII)
         );
     }
 
