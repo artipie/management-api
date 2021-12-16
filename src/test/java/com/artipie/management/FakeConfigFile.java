@@ -12,7 +12,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.commons.lang3.NotImplementedException;
 
 /**
  * Fake {@link ConfigFiles} implementation.
@@ -90,7 +89,21 @@ public final class FakeConfigFile implements ConfigFiles {
 
     @Override
     public CompletionStage<Void> delete(final Key filename) {
-        throw new NotImplementedException("not implemented yet");
+        final String name = this.name(filename);
+        final Key yaml = new Key.From(String.format("%s.yaml", name));
+        return this.storage.exists(yaml)
+            .thenCompose(
+                exists -> {
+                    final CompletionStage<Void> result;
+                    if (exists) {
+                        result = this.storage.delete(yaml);
+                    } else {
+                        final Key yml = new Key.From(String.format("%s.yml", name));
+                        result = this.storage.delete(yml);
+                    }
+                    return result;
+                }
+            );
     }
 
     @Override

@@ -21,8 +21,8 @@ import java.nio.charset.StandardCharsets;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.hamcrest.collection.IsEmptyCollection;
+import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -32,7 +32,6 @@ import org.junit.jupiter.params.provider.ValueSource;
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-@Disabled
 final class ApiRepoDeleteSliceTest {
 
     /**
@@ -47,8 +46,13 @@ final class ApiRepoDeleteSliceTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"bin.yaml", "bin.yml"})
-    void deletesRepoConfig(final String config) {
+    void deletesRepoConfigAndFilesInRepo(final String config) {
         final String user = "bob";
+        final Key left = new Key.From(user, "another_repo", "exist.jar");
+        final Key repo = new Key.From(user, "bin");
+        this.storage.save(new Key.From(repo, "one.txt"), Content.EMPTY).join();
+        this.storage.save(new Key.From(repo, "two.txt"), Content.EMPTY).join();
+        this.storage.save(left, Content.EMPTY).join();
         new TestResource("bin.yml").saveTo(this.storage, new Key.From(user, config));
         MatcherAssert.assertThat(
             "Repo config was not removed",
@@ -71,14 +75,19 @@ final class ApiRepoDeleteSliceTest {
         );
         MatcherAssert.assertThat(
             "Config file was not removed",
-            this.storage.list(Key.ROOT).join(),
+            this.storage.list(repo).join(),
             new IsEmptyCollection<>()
+        );
+        MatcherAssert.assertThat(
+            "File from another repo does not exist",
+            this.storage.exists(left).join(),
+            new IsEqual<>(true)
         );
     }
 
     private static Content body(final String reponame) {
         return new Content.From(
-            String.format("repo=%s", reponame).getBytes(StandardCharsets.US_ASCII)
+            String.format("repo=%s&action=delete", reponame).getBytes(StandardCharsets.UTF_8)
         );
     }
 
