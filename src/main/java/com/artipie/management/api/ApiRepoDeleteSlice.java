@@ -112,7 +112,7 @@ final class ApiRepoDeleteSlice implements Slice {
     }
 
     /**
-     * Removes conifuration file and items from the storage.
+     * Removes configuration file and items from the storage.
      * @param repo Key to the repo configuration
      * @param prefix Key to the repo with items
      * @return Result of completion

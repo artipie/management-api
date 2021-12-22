@@ -5,7 +5,6 @@
 package com.artipie.management.api;
 
 import com.artipie.asto.Content;
-import com.artipie.asto.Storage;
 import com.artipie.asto.ext.PublisherAs;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
@@ -13,11 +12,14 @@ import com.artipie.http.async.AsyncResponse;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
 import com.artipie.management.ConfigFiles;
+import com.artipie.management.Storages;
 import com.artipie.management.misc.ValueFromBody;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.regex.Pattern;
 import org.reactivestreams.Publisher;
 
@@ -38,17 +40,17 @@ public final class ApiRepoPostRtSlice implements Slice {
     private final ConfigFiles configfile;
 
     /**
-     * Storage.
+     * Artipie storages.
      */
-    private final Storage storage;
+    private final Storages storages;
 
     /**
      * Ctor.
-     * @param storage Storage
+     * @param storages Artipie storages
      * @param configfile Config file to support `.yaml` and `.yml` extensions
      */
-    public ApiRepoPostRtSlice(final Storage storage, final ConfigFiles configfile) {
-        this.storage = storage;
+    public ApiRepoPostRtSlice(final Storages storages, final ConfigFiles configfile) {
+        this.storages = storages;
         this.configfile = configfile;
     }
 
@@ -61,29 +63,37 @@ public final class ApiRepoPostRtSlice implements Slice {
         return new AsyncResponse(
             new PublisherAs(content)
                 .asciiString()
-                .thenApply(
+                .thenCompose(
                     form -> {
-                        final Response res;
+                        final CompletionStage<Response> res;
                         final ValueFromBody vals = new ValueFromBody(form);
                         final Optional<String> meth = vals.byName("action");
                         if (meth.isPresent() && Action.UPDATE.value().equals(meth.get())) {
-                            res = new ApiRepoUpdateSlice(this.configfile)
-                                .response(
-                                    line, headers,
-                                    new Content.From(
-                                        vals.payload().getBytes(StandardCharsets.UTF_8)
-                                    )
+                            res = CompletableFuture.allOf()
+                                .thenApply(
+                                    noth -> new ApiRepoUpdateSlice(this.configfile)
+                                        .response(
+                                            line, headers,
+                                            new Content.From(
+                                                vals.payload().getBytes(StandardCharsets.UTF_8)
+                                            )
+                                        )
                                 );
                         } else if (meth.isPresent() && Action.DELETE.value().equals(meth.get())) {
-                            res = new ApiRepoDeleteSlice(this.storage, this.configfile)
-                                .response(
-                                    line, headers,
-                                    new Content.From(
-                                        vals.payload().getBytes(StandardCharsets.UTF_8)
-                                    )
+                            res = this.storages.repoStorage(vals.byNameOrThrow("repo"))
+                                .thenApply(
+                                    storage -> new ApiRepoDeleteSlice(storage, this.configfile)
+                                        .response(
+                                            line, headers,
+                                            new Content.From(
+                                                vals.payload().getBytes(StandardCharsets.UTF_8)
+                                            )
+                                        )
                                 );
                         } else {
-                            res = new RsWithStatus(RsStatus.BAD_REQUEST);
+                            res = CompletableFuture.completedFuture(
+                                new RsWithStatus(RsStatus.BAD_REQUEST)
+                            );
                         }
                         return res;
                     }
