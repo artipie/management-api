@@ -15,11 +15,13 @@ import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.management.FakeConfigFile;
+import com.artipie.management.Storages;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
@@ -30,19 +32,26 @@ import org.junit.jupiter.params.provider.ValueSource;
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 final class ApiRepoPostRtSliceTest {
     /**
-     * Storage.
+     * Repo storage.
      */
-    private Storage storage;
+    private Storages storages;
+
+    /**
+     * Artipie configuration files storage.
+     */
+    private Storage artipie;
 
     @BeforeEach
     void setUp() {
-        this.storage = new InMemoryStorage();
+        this.artipie = new InMemoryStorage();
+        this.storages = new Storages.Fake(new InMemoryStorage());
     }
 
+    @ParameterizedTest
     @ValueSource(strings = {"action=unknown", "no_key=ignore"})
     void returnBadRequest(final String body) {
         MatcherAssert.assertThat(
-            new ApiRepoPostRtSlice(this.storage, new FakeConfigFile(this.storage)),
+            new ApiRepoPostRtSlice(this.storages, new FakeConfigFile(this.artipie)),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.BAD_REQUEST),
                 new RequestLine(RqMethod.POST, "/api/repos/user"),
@@ -62,7 +71,7 @@ final class ApiRepoPostRtSliceTest {
             )
         );
         MatcherAssert.assertThat(
-            new ApiRepoPostRtSlice(this.storage, new FakeConfigFile(this.storage)),
+            new ApiRepoPostRtSlice(this.storages, new FakeConfigFile(this.artipie)),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.FOUND),
                 new RequestLine(RqMethod.POST, "/api/repos/user"),
@@ -74,9 +83,9 @@ final class ApiRepoPostRtSliceTest {
 
     @Test
     void returnFoundOkForDelete() {
-        this.storage.save(new Key.From("user", "bin.yaml"), Content.EMPTY).join();
+        this.artipie.save(new Key.From("user", "bin.yaml"), Content.EMPTY).join();
         MatcherAssert.assertThat(
-            new ApiRepoPostRtSlice(this.storage, new FakeConfigFile(this.storage)),
+            new ApiRepoPostRtSlice(this.storages, new FakeConfigFile(this.artipie)),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.OK),
                 new RequestLine(RqMethod.POST, "/api/repos/user"),
