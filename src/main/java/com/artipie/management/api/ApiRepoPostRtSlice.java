@@ -18,8 +18,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.regex.Pattern;
 import org.reactivestreams.Publisher;
 
@@ -63,37 +61,29 @@ public final class ApiRepoPostRtSlice implements Slice {
         return new AsyncResponse(
             new PublisherAs(content)
                 .asciiString()
-                .thenCompose(
+                .thenApply(
                     form -> {
-                        final CompletionStage<Response> res;
+                        final Response res;
                         final ValueFromBody vals = new ValueFromBody(form);
                         final Optional<String> meth = vals.byName("action");
                         if (meth.isPresent() && Action.UPDATE.value().equals(meth.get())) {
-                            res = CompletableFuture.allOf()
-                                .thenApply(
-                                    noth -> new ApiRepoUpdateSlice(this.configfile)
-                                        .response(
-                                            line, headers,
-                                            new Content.From(
-                                                vals.payload().getBytes(StandardCharsets.UTF_8)
-                                            )
-                                        )
+                            res = new ApiRepoUpdateSlice(this.configfile)
+                                .response(
+                                    line, headers,
+                                    new Content.From(
+                                        vals.payload().getBytes(StandardCharsets.UTF_8)
+                                    )
                                 );
                         } else if (meth.isPresent() && Action.DELETE.value().equals(meth.get())) {
-                            res = this.storages.repoStorage(vals.byNameOrThrow("repo"))
-                                .thenApply(
-                                    storage -> new ApiRepoDeleteSlice(storage, this.configfile)
-                                        .response(
-                                            line, headers,
-                                            new Content.From(
-                                                vals.payload().getBytes(StandardCharsets.UTF_8)
-                                            )
-                                        )
+                            res = new ApiRepoDeleteSlice(this.storages, this.configfile)
+                                .response(
+                                    line, headers,
+                                    new Content.From(
+                                        vals.payload().getBytes(StandardCharsets.UTF_8)
+                                    )
                                 );
                         } else {
-                            res = CompletableFuture.completedFuture(
-                                new RsWithStatus(RsStatus.BAD_REQUEST)
-                            );
+                            res = new RsWithStatus(RsStatus.BAD_REQUEST);
                         }
                         return res;
                     }
