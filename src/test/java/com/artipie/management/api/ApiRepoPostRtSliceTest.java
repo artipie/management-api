@@ -82,12 +82,12 @@ final class ApiRepoPostRtSliceTest {
     }
 
     @Test
-    void returnFoundOkForDelete() {
+    void returnFoundForDelete() {
         this.artipie.save(new Key.From("user", "bin.yaml"), Content.EMPTY).join();
         MatcherAssert.assertThat(
             new ApiRepoPostRtSlice(this.storages, new FakeConfigFile(this.artipie)),
             new SliceHasResponse(
-                new RsHasStatus(RsStatus.OK),
+                new RsHasStatus(RsStatus.FOUND),
                 new RequestLine(RqMethod.POST, "/api/repos/user"),
                 Headers.EMPTY,
                 new Content.From("action=delete&repo=bin".getBytes(StandardCharsets.UTF_8))
