@@ -7,6 +7,7 @@ package com.artipie.management.api;
 import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
+import com.artipie.asto.SubStorage;
 import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.asto.test.TestResource;
 import com.artipie.http.Headers;
@@ -17,6 +18,7 @@ import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.management.FakeConfigFile;
+import com.artipie.management.Storages;
 import java.nio.charset.StandardCharsets;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -53,10 +55,14 @@ final class ApiRepoDeleteSliceTest {
         this.storage.save(new Key.From(repo, "one.txt"), Content.EMPTY).join();
         this.storage.save(new Key.From(repo, "two.txt"), Content.EMPTY).join();
         this.storage.save(left, Content.EMPTY).join();
-        new TestResource("bin.yml").saveTo(this.storage, new Key.From(user, config));
+        final Storage artipie = new InMemoryStorage();
+        new TestResource("bin.yml").saveTo(artipie, new Key.From(user, config));
         MatcherAssert.assertThat(
             "Repo config was not removed",
-            new ApiRepoDeleteSlice(this.storage, new FakeConfigFile(this.storage)),
+            new ApiRepoDeleteSlice(
+                new Storages.Fake(new SubStorage(repo, this.storage)),
+                new FakeConfigFile(artipie)
+            ),
             new SliceHasResponse(
                 Matchers.allOf(
                     new RsHasStatus(RsStatus.OK),

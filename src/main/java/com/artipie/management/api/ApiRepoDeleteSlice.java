@@ -5,7 +5,6 @@
 package com.artipie.management.api;
 
 import com.artipie.asto.Key;
-import com.artipie.asto.Storage;
 import com.artipie.asto.ext.PublisherAs;
 import com.artipie.http.Headers;
 import com.artipie.http.Response;
@@ -17,6 +16,7 @@ import com.artipie.http.rs.RsWithBody;
 import com.artipie.http.rs.RsWithHeaders;
 import com.artipie.http.rs.RsWithStatus;
 import com.artipie.management.ConfigFiles;
+import com.artipie.management.Storages;
 import com.artipie.management.misc.ValueFromBody;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -38,17 +38,17 @@ final class ApiRepoDeleteSlice implements Slice {
     private final ConfigFiles configfile;
 
     /**
-     * Storage.
+     * Artipie repo storage.
      */
-    private final Storage storage;
+    private final Storages storages;
 
     /**
      * Ctor.
-     * @param storage Storage
+     * @param storages Artipie repo storage
      * @param configfile Config file to support `.yaml` and `.yml` extensions
      */
-    ApiRepoDeleteSlice(final Storage storage, final ConfigFiles configfile) {
-        this.storage = storage;
+    ApiRepoDeleteSlice(final Storages storages, final ConfigFiles configfile) {
+        this.storages = storages;
         this.configfile = configfile;
     }
 
@@ -83,9 +83,7 @@ final class ApiRepoDeleteSlice implements Slice {
                                 exists -> {
                                     final CompletionStage<Response> res;
                                     if (exists) {
-                                        res = this.deleteConfigAndItems(
-                                            repo, new Key.From(user, name)
-                                        ).thenApply(
+                                        res = this.deleteConfigAndItems(repo).thenApply(
                                             noth -> new RsWithHeaders(
                                                 new RsWithStatus(RsStatus.OK),
                                                 new Headers.From(
@@ -114,11 +112,11 @@ final class ApiRepoDeleteSlice implements Slice {
     /**
      * Removes configuration file and items from the storage.
      * @param repo Key to the repo configuration
-     * @param prefix Key to the repo with items
      * @return Result of completion
      */
-    private CompletionStage<Void> deleteConfigAndItems(final Key repo, final Key prefix) {
-        return this.configfile.delete(repo)
-            .thenCompose(noth -> this.storage.deleteAll(prefix));
+    private CompletionStage<Void> deleteConfigAndItems(final Key repo) {
+        return this.storages.repoStorage(repo.string())
+            .thenCompose(strg -> strg.deleteAll(Key.ROOT))
+            .thenCompose(noth -> this.configfile.delete(repo));
     }
 }
