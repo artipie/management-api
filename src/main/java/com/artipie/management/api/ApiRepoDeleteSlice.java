@@ -85,7 +85,7 @@ final class ApiRepoDeleteSlice implements Slice {
                                     if (exists) {
                                         res = this.deleteConfigAndItems(repo).thenApply(
                                             noth -> new RsWithHeaders(
-                                                new RsWithStatus(RsStatus.OK),
+                                                new RsWithStatus(RsStatus.FOUND),
                                                 new Headers.From(
                                                     "Location",
                                                     String.format("/dashboard/%s", user)

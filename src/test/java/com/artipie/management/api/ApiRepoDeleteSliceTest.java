@@ -65,7 +65,7 @@ final class ApiRepoDeleteSliceTest {
             ),
             new SliceHasResponse(
                 Matchers.allOf(
-                    new RsHasStatus(RsStatus.OK),
+                    new RsHasStatus(RsStatus.FOUND),
                     new RsHasHeaders(
                         new Headers.From(
                         "Location", String.format("/dashboard/%s", user)
