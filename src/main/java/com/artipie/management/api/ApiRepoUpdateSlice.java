@@ -4,11 +4,8 @@
  */
 package com.artipie.management.api;
 
-import com.amihaiemil.eoyaml.Scalar;
 import com.amihaiemil.eoyaml.Yaml;
 import com.amihaiemil.eoyaml.YamlMapping;
-import com.amihaiemil.eoyaml.YamlMappingBuilder;
-import com.amihaiemil.eoyaml.YamlNode;
 import com.artipie.ArtipieException;
 import com.artipie.asto.Content;
 import com.artipie.asto.Key;
@@ -24,6 +21,7 @@ import com.artipie.http.rs.RsWithHeaders;
 import com.artipie.http.rs.RsWithStatus;
 import com.artipie.management.ConfigFiles;
 import com.artipie.management.misc.ValueFromBody;
+import com.artipie.management.repo.UpdateRepo;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -34,10 +32,7 @@ import org.reactivestreams.Publisher;
 /**
  * Patch repo API.
  * @since 0.1
- * @checkstyle ExecutableStatementCountCheck (500 lines)
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
- * @checkstyle CyclomaticComplexityCheck (500 lines)
- * @checkstyle NPathComplexityCheck (500 lines)
  */
 final class ApiRepoUpdateSlice implements Slice {
     /**
@@ -54,7 +49,7 @@ final class ApiRepoUpdateSlice implements Slice {
     }
 
     @Override
-    @SuppressWarnings({"PMD.AvoidDuplicateLiterals", "PMD.NPathComplexity"})
+    @SuppressWarnings("PMD.AvoidDuplicateLiterals")
     public Response response(final String line,
         final Iterable<Map.Entry<String, String>> headers, final Publisher<ByteBuffer> body) {
         final Matcher matcher = ApiRepoPostRtSlice.PTN.matcher(
@@ -73,32 +68,12 @@ final class ApiRepoUpdateSlice implements Slice {
                         if (repo == null) {
                             throw new ArtipieException("Repo section is required");
                         }
-                        final YamlNode type = repo.value("type");
-                        if (type == null || !Scalar.class.isAssignableFrom(type.getClass())) {
-                            throw new ArtipieException("Repository type required");
-                        }
-                        final YamlMapping ystor = repo.yamlMapping("storage");
-                        final String sstor = repo.string("storage");
-                        if (ystor == null && sstor == null) {
-                            throw new ArtipieException("Repository storage is required");
-                        }
-                        YamlMappingBuilder yrepo = Yaml.createYamlMappingBuilder().add("type", type);
-                        if (ystor == null) {
-                            yrepo = yrepo.add("storage", sstor);
-                        } else {
-                            yrepo = yrepo.add("storage", ystor);
-                        }
-                        if (repo.value("permissions") != null) {
-                            yrepo = yrepo.add("permissions", repo.value("permissions"));
-                        }
-                        if (repo.value("settings") != null) {
-                            yrepo = yrepo.add("settings", repo.value("settings"));
-                        }
                         final String name = vals.byNameOrThrow("repo");
                         return this.configfile.save(
                             new Key.From(user, String.format("%s.yaml", name)),
                             new Content.From(
-                                Yaml.createYamlMappingBuilder().add("repo", yrepo.build())
+                                Yaml.createYamlMappingBuilder()
+                                    .add("repo", new UpdateRepo.Valid(repo).repo())
                                     .build().toString().getBytes(StandardCharsets.UTF_8)
                             )
                         ).thenApply(nothing -> name);
